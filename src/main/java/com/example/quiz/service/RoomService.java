@@ -11,6 +11,7 @@ import com.example.quiz.repository.GameRepository;
 import com.example.quiz.repository.RoomRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
@@ -34,5 +35,20 @@ public class RoomService {
         gameRepository.save(game);
 
         return new RoomEnterResponse(room);
+    }
+
+    @Transactional
+    public RoomModifyResponse modifyRoom(RoomModifyRequest request, long roomId) {
+        Room room = roomRepository.findById(roomId).orElseThrow(IllegalArgumentException::new);
+
+        if (request.getRoomName() != null) {
+            room.changeRoomName(request.getRoomName());
+        }
+
+        if (request.getSubject() != null) {
+            room.changeSubject(request.getSubject());
+        }
+
+        return new RoomModifyResponse(room);
     }
 }
