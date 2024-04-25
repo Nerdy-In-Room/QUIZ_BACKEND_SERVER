@@ -1,0 +1,11 @@
+server:
+  port: 80
+
+spring:
+  profiles:
+    default: local
+    group:
+      local:
+        - local
+      prod:
+        - prod
