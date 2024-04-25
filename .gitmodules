@@ -1,0 +1,3 @@
+[submodule "BACKEND_SERVER_ENV"]
+	path = BACKEND_SERVER_ENV
+	url = https://github.com/Nerdy-In-Room/BACKEND_SERVER_ENV.git
