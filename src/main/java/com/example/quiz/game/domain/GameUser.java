@@ -1,4 +1,4 @@
-package com.example.quiz.domain;
+package com.example.quiz.game.domain;
 
 import lombok.Getter;
 import lombok.Setter;
