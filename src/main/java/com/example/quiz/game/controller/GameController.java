@@ -1,10 +1,10 @@
-package com.example.quiz.controller;
+package com.example.quiz.game.controller;
 
-import com.example.quiz.dto.request.RequestUserId;
-import com.example.quiz.dto.response.ResponseMessage;
-import com.example.quiz.service.GameService;
-import lombok.AllArgsConstructor;
-import lombok.NoArgsConstructor;
+import com.example.quiz.game.dto.request.RequestUserId;
+import com.example.quiz.game.dto.request.RequestUserInfoAnswer;
+import com.example.quiz.game.dto.response.ResponseMessage;
+import com.example.quiz.game.dto.response.ResponseQuiz;
+import com.example.quiz.game.service.GameService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.messaging.handler.annotation.DestinationVariable;
@@ -27,5 +27,12 @@ public class GameController {
     public void enter(@DestinationVariable String id, RequestUserId requestUserId){
         ResponseMessage responseMessage = gameService.gameStatusService(id, requestUserId.getUserId());
         messagingTemplate.convertAndSend("/pub/"+id,responseMessage);
+    }
+
+    @MessageMapping("/{id}/send")
+    public void sendQuize(@DestinationVariable String id, RequestUserInfoAnswer userInfoAnswer){
+        log.info("응답이 들어왔습니다");
+        ResponseQuiz responseQuize = gameService.sendQuiz(id,userInfoAnswer);
+        messagingTemplate.convertAndSend("/pub/"+id+"/send",responseQuize);
     }
 }
