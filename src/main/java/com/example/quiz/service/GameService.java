@@ -47,7 +47,6 @@ public class GameService {
             responseMessage.setCheckedAnswer(findUser.getReadyStatus() ? true:false);
             // 해당 유저의 역할이 방장일 경우
         }else if (findUser.getUserRole().equals("ADMIN")){
-            // TODO: 고도화 쿼리로 일 넘김
             long count = gameUser.stream().filter(user -> user.getReadyStatus().equals(true)).count();
             if (count == game.getCurrentParticipantsNo()-1){
                 findUser.setReadyStatus(!findUser.getReadyStatus());
