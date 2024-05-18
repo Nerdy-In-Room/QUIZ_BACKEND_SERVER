@@ -25,28 +25,6 @@ public class GameController {
 
     @MessageMapping("/{id}")
     public void enter(@DestinationVariable String id, RequestUserId requestUserId){
-        // 방에 들어오면 성공적으로 방에 들어왔다는 알림을 보내야함
-
-        /*if(!gameService.startGame(id)){
-            ResponseMessage responseMessage = gameService.gameStatusService(id, requestDto.getUserId());
-            messagingTemplate.convertAndSend("/pub/"+id,responseMessage);
-            if(gameService.startGame(id)){
-                // 방에 문제를 뿌려주는 코드
-                ResponseQuize responseQuize = gameService.sendQuiz(id);
-                messagingTemplate.convertAndSend("/pub/"+id,responseQuize);
-            }
-
-        }else{
-
-            gameService.checkAnswer(id,requestDto);
-
-        }
-
-        *//*log.info("id의 값은 {}",id);
-        if (requestDto.getMessageType().equals(MessageType.GAME_STATUS)){
-            gameService.gameStatusService(id, requestDto.getUserId());
-        }*//*
-        return requestDto;*/
         ResponseMessage responseMessage = gameService.gameStatusService(id, requestUserId.getUserId());
         messagingTemplate.convertAndSend("/pub/"+id,responseMessage);
     }
