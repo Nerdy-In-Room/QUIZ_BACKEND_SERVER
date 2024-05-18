@@ -1,6 +1,7 @@
 package com.example.quiz.game.service;
 
 import com.example.quiz.game.dto.request.RequestUserInfoAnswer;
+import com.example.quiz.game.dto.response.RequestAnswer;
 import com.example.quiz.game.dto.response.ResponseMessage;
 import com.example.quiz.game.dto.response.ResponseQuiz;
 import com.example.quiz.game.domain.Game;
@@ -106,5 +107,15 @@ public class GameService {
             }
         }
         return responseQuize;
+    }
+
+    public ResponseMessage checkAnswer(String id, RequestAnswer requestAnswer){
+
+        Quiz quiz = quizRepository.findById(requestAnswer.getQuizId()).get();
+
+        return ResponseMessage.builder()
+                .userId(requestAnswer.getUserId())
+                .isCheckedAnswer(quiz.getAnswer().equals(requestAnswer.getAnswer()))
+                .build();
     }
 }

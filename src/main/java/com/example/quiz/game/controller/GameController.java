@@ -2,6 +2,7 @@ package com.example.quiz.game.controller;
 
 import com.example.quiz.game.dto.request.RequestUserId;
 import com.example.quiz.game.dto.request.RequestUserInfoAnswer;
+import com.example.quiz.game.dto.response.RequestAnswer;
 import com.example.quiz.game.dto.response.ResponseMessage;
 import com.example.quiz.game.dto.response.ResponseQuiz;
 import com.example.quiz.game.service.GameService;
@@ -34,5 +35,12 @@ public class GameController {
         log.info("응답이 들어왔습니다");
         ResponseQuiz responseQuize = gameService.sendQuiz(id,userInfoAnswer);
         messagingTemplate.convertAndSend("/pub/"+id+"/send",responseQuize);
+    }
+
+    @MessageMapping("/{id}/check")
+    public void checkQuize(@DestinationVariable String id, RequestAnswer requestAnswer){
+        log.info("응답");
+        ResponseMessage responseMessage = gameService.checkAnswer(id, requestAnswer);
+        messagingTemplate.convertAndSend("/pub/"+id+"/check",responseMessage);
     }
 }
