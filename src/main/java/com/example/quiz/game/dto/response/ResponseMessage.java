@@ -1,4 +1,4 @@
-package com.example.quiz.dto.response;
+package com.example.quiz.game.dto.response;
 
 import lombok.*;
 

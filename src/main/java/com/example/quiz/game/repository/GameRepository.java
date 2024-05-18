@@ -1,4 +1,4 @@
-package com.example.quiz.repository;
+package com.example.quiz.game.repository;
 
 import com.example.quiz.game.domain.Game;
 import org.springframework.data.mongodb.repository.MongoRepository;

@@ -1,4 +1,4 @@
-package com.example.quiz.dto.request;
+package com.example.quiz.game.dto.request;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
