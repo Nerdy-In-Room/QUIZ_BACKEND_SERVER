@@ -58,10 +58,7 @@ public class RoomProducerService {
                 });
 
         if (roomListResponsePage.isEmpty()) {
-//            simpMessagingTemplate.convertAndSend("/room", "[]");
-
             log.info("list empty");
-
             return null;
         }
 
