@@ -10,7 +10,7 @@ import lombok.Setter;
 @Getter
 public class RoomEnterResponse {
     private String roomName;
-    private String subject;
+    private Long topicId;
     private Integer maxPeople;
     private Integer quizCnt;
     private boolean removeStatus;
@@ -18,9 +18,9 @@ public class RoomEnterResponse {
     @Builder
     public RoomEnterResponse (Room room) {
         this.roomName = room.getRoomName();
-        this.subject = room.getSubject();
+        this.topicId = room.getTopicId();
         this.maxPeople = room.getMaxPeople();
-        this.quizCnt = room.getQuizCnt();
-        this.removeStatus = room.isRemoveStatus();
+        this.quizCnt = room.getQuizCount();
+        this.removeStatus = room.getRemoveStatus();
     }
 }

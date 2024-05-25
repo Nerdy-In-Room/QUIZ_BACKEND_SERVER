@@ -6,6 +6,7 @@ import com.example.quiz.dto.room.response.RoomModifyResponse;
 import com.example.quiz.entity.Game;
 import com.example.quiz.entity.Room;
 import com.example.quiz.entity.User;
+import com.example.quiz.enums.Role;
 import com.example.quiz.repository.GameRepository;
 import com.example.quiz.repository.RoomRepository;
 import lombok.RequiredArgsConstructor;
@@ -22,7 +23,7 @@ public class RoomService {
         Room room = roomRepository.findById(roomId).orElseThrow(IllegalArgumentException::new);
 
         // user는 jwt에서 가져올 예정
-        User user = new User(3L, "USER", 0);
+        User user = new User(3L, Role.USER, false);
 
         Game game = gameRepository.findById(String.valueOf(roomId)).orElseThrow();
 
@@ -44,8 +45,8 @@ public class RoomService {
             room.changeRoomName(request.getRoomName());
         }
 
-        if (request.getSubject() != null) {
-            room.changeSubject(request.getSubject());
+        if (request.getTopicId() != null) {
+            room.changeSubject(request.getTopicId());
         }
 
         return new RoomModifyResponse(room);

@@ -3,18 +3,16 @@ package com.example.quiz.jwt;
 
 import com.example.quiz.config.auth.CustomUserDetails;
 import com.example.quiz.entity.User;
-import lombok.RequiredArgsConstructor;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.stereotype.Component;
-import org.springframework.web.filter.OncePerRequestFilter;
-
+import java.io.IOException;
 import javax.servlet.FilterChain;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import java.io.IOException;
+import lombok.RequiredArgsConstructor;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.web.filter.OncePerRequestFilter;
 
 /*
 Filter부분을 고도화 : try-catch 문으로 감싸고 catch로 예외를 handling
@@ -47,7 +45,6 @@ public class JWTRequestFilter extends OncePerRequestFilter {
 
         User user = new User();
         user.setUsername(username);
-        user.setPassword("temppassword");
 
         CustomUserDetails customUserDetails = new CustomUserDetails(user);
 

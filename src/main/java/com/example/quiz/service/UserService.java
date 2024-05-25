@@ -10,38 +10,32 @@ import com.example.quiz.model.OAuthToken;
 import com.example.quiz.repository.UserRepository;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-
+import javax.servlet.http.Cookie;
+import javax.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestTemplate;
 
-import javax.servlet.http.Cookie;
-import javax.servlet.http.HttpServletResponse;
-
 @Service
 @Slf4j
 public class UserService {
 
     private final UserRepository userRepository;
-    private final BCryptPasswordEncoder encoder;
     private final KakaoProperties kakaoProperties;
     private final KakaoToken kakaoToken;
 
     public UserService(
             UserRepository userRepository,
-            BCryptPasswordEncoder encoder,
             KakaoProperties kakaoProperties,
             KakaoToken kakaoToken) {
         this.userRepository = userRepository;
-        this.encoder = encoder;
         this.kakaoProperties = kakaoProperties;
         this.kakaoToken = kakaoToken;
     }
@@ -55,7 +49,6 @@ public class UserService {
         //로그인 회원가입 단계
         User kakaoUser = User.builder()
                 .username(kakaoProfile.getKakao_account().getEmail() + "_" + kakaoProfile.getId())
-                .password("")
                 .email(kakaoProfile.getKakao_account().getEmail())
                 .build();
 
@@ -135,10 +128,8 @@ public class UserService {
 
     @Transactional
     public User signUp(User user) {
-        String rawPassword = user.getPassword();
-        String encPassword = encoder.encode(rawPassword);
         user.setRole(Role.USER);
-        user.setPassword(encPassword);
+
         return userRepository.save(user);
     }
 
@@ -148,9 +139,6 @@ public class UserService {
             return new IllegalArgumentException("회원 찾기 실패");
         });
 
-        String rawPassword = user.getPassword();
-        String encPassword = encoder.encode(rawPassword);
-        persistance.setPassword(encPassword);
         persistance.setEmail(user.getEmail());
 
         //회원 수정 함수 종료 시 = 서비스 종료 = 트랜잭션 종료 = commit이 자동으로 수행

@@ -10,11 +10,11 @@ import lombok.Setter;
 @Setter
 public class RoomModifyResponse {
     private String roomName;
-    private String subject;
+    private Long topicId;
 
     @Builder
     public RoomModifyResponse(Room room) {
         this.roomName = room.getRoomName();
-        this.subject = room.getSubject();
+        this.topicId = room.getTopicId();
     }
 }

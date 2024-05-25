@@ -6,35 +6,30 @@ import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.ColumnDefault;
 
-@Entity
 @Getter
 @NoArgsConstructor
+@AllArgsConstructor
+@Entity
+@Builder
 public class Room implements Serializable {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long roomId;
+    private Long topicId;
     private String roomName;
-    private String subject;
     private Integer maxPeople;
-    private Integer quizCnt;
+    private Integer quizCount;
+    @ColumnDefault("false")
+    @Column(columnDefinition = "TINYINT(1)")
+    private Boolean removeStatus;
     private String masterEmail;
-    @Column(columnDefinition = "TINYINT(0)")
-    private boolean removeStatus;
-
-    @Builder
-    public Room(String roomName, String subject, Integer maxPeople, Integer quizCnt, boolean removeStatus, String masterEmail) {
-        this.roomName = roomName;
-        this.subject = subject;
-        this.maxPeople = maxPeople;
-        this.quizCnt = quizCnt;
-        this.removeStatus = removeStatus;
-        this.masterEmail = masterEmail;
-    }
 
     public void changeRemoveStatus() {
         this.removeStatus = false;
@@ -44,7 +39,7 @@ public class Room implements Serializable {
         this.roomName = roomName;
     }
 
-    public void changeSubject(String subject) {
-        this.subject = subject;
+    public void changeSubject(Long topicId) {
+        this.topicId = topicId;
     }
 }
