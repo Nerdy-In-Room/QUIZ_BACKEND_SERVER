@@ -39,6 +39,8 @@ public class RoomProducerService {
         game.getGameUser().add(user);
         gameRepository.save(game);
 
+        // kafkaTemplate.send(TOPIC, roomId, room);
+
         return roomId;
     }
 
@@ -54,6 +56,7 @@ public class RoomProducerService {
                 });
 
         if (roomListResponsePage.isEmpty()) {
+            // simpMessagingTemplate.convertAndSend("/room", "[]");
             log.info("list empty");
             return null;
         }
