@@ -1,7 +1,7 @@
-package com.example.quiz.room.repository;
+package com.example.quiz.repository;
 
 
-import com.example.quiz.room.domain.Quiz;
+import com.example.quiz.entity.Quiz;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;

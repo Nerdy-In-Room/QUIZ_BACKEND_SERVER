@@ -1,4 +1,4 @@
-package com.example.quiz.game.dto.response;
+package com.example.quiz.dto.response;
 
 import lombok.Getter;
 import lombok.NoArgsConstructor;

@@ -1,4 +1,4 @@
-package com.example.quiz.room.domain;
+package com.example.quiz.entity;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
