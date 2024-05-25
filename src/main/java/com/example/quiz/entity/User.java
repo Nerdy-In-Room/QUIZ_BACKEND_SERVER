@@ -22,14 +22,17 @@ public class User {
     @Column(nullable = false, length = 100, unique = true)
     private String username;
 
-    @Column(nullable = false, length = 100)
-    private String password;
-
     @Column(nullable = false, length = 50)
     private String email;
 
     @Enumerated(value = EnumType.STRING)
     private Role role;
 
-    private Integer readyStatus;
+    private boolean readyStatus;
+
+    public User(Long userId, Role userRole, boolean readyStatus) {
+        this.id = userId;
+        this.role = userRole;
+        this.readyStatus = readyStatus;
+    }
 }
