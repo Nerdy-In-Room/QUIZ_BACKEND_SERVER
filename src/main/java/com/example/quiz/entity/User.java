@@ -14,9 +14,10 @@ import javax.persistence.*;
 @NoArgsConstructor
 @Data
 public class User {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    private Long id; 
 
     @Column(nullable = false, length = 100, unique = true)
     private String username;
@@ -29,4 +30,6 @@ public class User {
 
     @Enumerated(value = EnumType.STRING)
     private Role role;
+
+    private Integer readyStatus;
 }
