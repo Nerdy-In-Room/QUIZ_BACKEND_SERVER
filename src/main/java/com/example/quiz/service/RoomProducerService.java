@@ -39,8 +39,6 @@ public class RoomProducerService {
         game.getGameUser().add(user);
         gameRepository.save(game);
 
-//        kafkaTemplate.send(TOPIC, roomId, room);
-
         return roomId;
     }
 
@@ -51,9 +49,7 @@ public class RoomProducerService {
                 .map(room -> {
                     RoomListResponse roomListResponse = new RoomListResponse(room);
                     Game game = gameRepository.findById(String.valueOf(room.getRoomId())).orElseThrow();
-
                     roomListResponse.setCurrentPeople(game.getGameUser().size());
-
                     return roomListResponse;
                 });
 
