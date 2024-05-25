@@ -9,17 +9,17 @@ import lombok.Setter;
 @Setter
 public class RoomModifyRequest {
     private String roomName;
-    private String subject;
+    private Long topicId;
 
-    public RoomModifyRequest(String roomName, String subject) {
+    public RoomModifyRequest(String roomName, Long topicId) {
         this.roomName = roomName;
-        this.subject = subject;
+        this.topicId = topicId;
     }
 
     public Room toEntity() {
         return Room.builder()
                 .roomName(roomName)
-                .subject(subject)
+                .topicId(topicId)
                 .build();
     }
 }

@@ -5,6 +5,7 @@ import com.example.quiz.dto.room.response.RoomListResponse;
 import com.example.quiz.entity.Game;
 import com.example.quiz.entity.Room;
 import com.example.quiz.entity.User;
+import com.example.quiz.enums.Role;
 import com.example.quiz.repository.GameRepository;
 import com.example.quiz.repository.RoomRepository;
 import java.util.ArrayList;
@@ -32,10 +33,11 @@ public class RoomProducerService {
         Room room = roomRequest.toEntity();
         long roomId = roomRepository.save(room).getRoomId();
 
-        User user = new User(1L, "USER", 0);
+        User user = new User(1L, Role.ADMIN, false);
 
         Game game = gameRepository.save(
                 new Game(String.valueOf(roomId), 1, false, new ArrayList<>()));
+
         game.getGameUser().add(user);
         gameRepository.save(game);
 
