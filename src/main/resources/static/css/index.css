@@ -1,0 +1,8 @@
+table, th, td {
+    border: 1px solid black;
+}
+
+.disabled-link {
+    color: grey;
+    pointer-events: none;
+}
