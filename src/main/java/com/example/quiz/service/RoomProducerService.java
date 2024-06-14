@@ -1,6 +1,7 @@
 package com.example.quiz.service;
 
 import com.example.quiz.dto.room.request.RoomCreateRequest;
+import com.example.quiz.dto.room.response.RoomEnterResponse;
 import com.example.quiz.dto.room.response.RoomListResponse;
 import com.example.quiz.entity.Game;
 import com.example.quiz.entity.Room;
@@ -9,6 +10,7 @@ import com.example.quiz.enums.Role;
 import com.example.quiz.repository.GameRepository;
 import com.example.quiz.repository.RoomRepository;
 import java.util.ArrayList;
+import java.util.HashSet;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -29,21 +31,21 @@ public class RoomProducerService {
     private final RoomRepository roomRepository;
     private final GameRepository gameRepository;
 
-    public long createRoom(RoomCreateRequest roomRequest) {
+    public RoomEnterResponse createRoom(RoomCreateRequest roomRequest) {
         Room room = roomRequest.toEntity();
         long roomId = roomRepository.save(room).getRoomId();
 
         User user = new User(1L, Role.ADMIN, false);
 
         Game game = gameRepository.save(
-                new Game(String.valueOf(roomId), 1, false, new ArrayList<>()));
+                new Game(String.valueOf(roomId), 1, false, new HashSet<>()));
 
         game.getGameUser().add(user);
         gameRepository.save(game);
 
         // kafkaTemplate.send(TOPIC, roomId, room);
 
-        return roomId;
+        return new RoomEnterResponse(room);
     }
 
     public Page<RoomListResponse> roomList(int index) {
