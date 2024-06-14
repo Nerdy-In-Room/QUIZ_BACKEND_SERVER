@@ -1,12 +1,129 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ko">
 <head>
-    <title>Hello</title>
-    <meta  http-equiv="Content-Type" content="text/html charset=UTF-8">
+    <title>Quiz</title>
+    <meta http-equiv="Content-Type" content="text/html charset=UTF-8">
+    <meta charset="UTF-8">
+    <title>list</title>
+    <!-- CSS only -->
+    <link rel="stylesheet" type="text/css" href="/css/index.css">
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css"
+          integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+
+    <!-- JS, Popper.js, and jQuery -->
+    <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js"
+            integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo"
+            crossorigin="anonymous"></script>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js"
+            integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1"
+            crossorigin="anonymous"></script>
+
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"
+            integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM"
+            crossorigin="anonymous"></script>
+    <script defer src="/script/room.js"></script>
 </head>
 <body>
-Hello
-<a href="https://kauth.kakao.com/oauth/authorize?client_id=80d80a8cdee20163339bb014f820b02c&redirect_uri=http://localhost/auth/kakao/callback
-&response_type=code">카카오로그인</a>
+<div th:if="${roomList == null or roomList.empty}">
+    <p>현재 생성된 방이 없습니다</p>
+</div>
+<button id="roomCreate" type="button" data-toggle="modal" data-target="#roomCreateModal">방 만들기</button>
+<div th:unless="${roomList == null or roomList.empty}">
+    <table>
+        <thead>
+        <tr>
+            <th>Room Id</th>
+            <th>Room Name</th>
+            <th>topic Id</th>
+            <th>Max People</th>
+            <th>Quiz Count</th>
+            <th>Current People</th>
+            <th></th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr th:each="room : ${roomList}">
+            <td th:text="${room.roomId}"></td>
+            <td th:text="${room.roomName}"></td>
+            <td th:text="${room.topicId}"></td>
+            <td th:text="${room.maxPeople}"></td>
+            <td th:text="${room.quizCnt}"></td>
+            <td th:text="${room.currentPeople}"></td>
+            <td><a th:data-roomid="${room.roomId}" th:href="@{'/room/' + ${room.roomId}}">enter</a></td>
+        </tr>
+        </tbody>
+    </table>
+</div>
+<div th:unless="${roomList == null or roomList.empty}">
+    <span th:if="${roomList.first}">First</span>
+    <span th:unless="${roomList.first}"><a href="?page=1">First</a></span>
+
+    <span th:if="${roomList.number == 0}">Prev</span>
+    <span th:unless="${roomList.number == 0}"><a th:href="@{'?page=' + ${roomList.number}}">Prev</a></span>
+
+    <span th:each="pageNumber : ${#numbers.sequence(roomList.number > 4 ? roomList.number - 4 : 1, roomList.totalPages > roomList.number + 5 ? roomList.number + 5 : roomList.totalPages)}">
+    <!-- pageNumber가 현재 페이지 번호와 다르다면 링크 활성화 -->
+    <a th:if="${pageNumber != roomList.number + 1}"
+       th:href="@{'?page=' + ${pageNumber}}"
+       th:text="${pageNumber}">
+    </a>
+        <!-- pageNumber가 현재 페이지 번호와 같다면 링크 비활성화 -->
+    <a th:unless="${pageNumber != roomList.number + 1}"
+       class="disabled-link"
+       th:text="${pageNumber}">
+    </a>
+</span>
+    <span th:if="${roomList.totalPages - 1 == roomList.number}">Next</span>
+    <span th:unless="${roomList.totalPages - 1 == roomList.number}"><a th:href="@{'?page=' + ${roomList.number + 2}}">Next</a></span>
+
+    <span th:if="${roomList.last}">Last</span>
+    <span th:unless="${roomList.last}"><a th:href="@{'?page=' + ${roomList.totalPages}}">Last</a></span>
+</div>
+
+<!-- 방 생성 모달 -->
+<div class="modal fade" id="roomCreateModal" tabindex="-1" role="dialog" aria-labelledby="roomCreateModalLabel"
+     aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+
+            <!-- 모달 헤더 -->
+            <div class="modal-header">
+                <h5 class="modal-title" id="roomCreateModalLabel">방 생성</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+
+            <!-- 모달 바디 - 입력 폼 -->
+            <form th:action="@{/room}" method="post">
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="roomName">Room Name</label>
+                        <input type="text" class="form-control" id="roomName" name="roomName" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="topicId">Subject</label>
+                        <input type="number" class="form-control" id="topicId" name="topicId" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="maxPeople">Maximum People</label>
+                        <input type="number" class="form-control" id="maxPeople" name="maxPeople" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="quizCnt">Number of Quizzes</label>
+                        <input type="number" class="form-control" id="quizCnt" name="quizCnt" required>
+                    </div>
+                </div>
+
+                <!-- 모달 푸터 - 제출 버튼 -->
+                <div class="modal-footer">
+                    <button type="submit" class="btn btn-primary">방 만들기</button>
+                </div>
+            </form>
+
+        </div>
+    </div>
+</div>
 </body>
 </html>
