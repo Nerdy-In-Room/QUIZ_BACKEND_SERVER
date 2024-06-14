@@ -19,11 +19,15 @@ public class RoomService {
     private final RoomRepository roomRepository;
     private final GameRepository gameRepository;
 
-    public RoomEnterResponse enterRoom(long roomId) {
+    public RoomEnterResponse enterRoom(long roomId) throws IllegalAccessException {
         Room room = roomRepository.findById(roomId).orElseThrow(IllegalArgumentException::new);
 
         // user는 jwt에서 가져올 예정
-        User user = new User(3L, Role.USER, false);
+        User user = new User(5L, "user", "sample@sampe.co", Role.USER, false);
+
+        if (user == null) {
+            throw new IllegalAccessException();
+        }
 
         Game game = gameRepository.findById(String.valueOf(roomId)).orElseThrow();
 
