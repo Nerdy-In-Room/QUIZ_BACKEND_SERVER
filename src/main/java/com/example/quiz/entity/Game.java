@@ -1,6 +1,6 @@
 package com.example.quiz.entity;
 
-import java.util.List;
+import java.util.Set;
 import javax.persistence.Column;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -23,5 +23,5 @@ public class Game {
     private Integer currentParticipantsNo;
     private Boolean isGaming;
     @Field("gameUser")
-    private List<User> gameUser;
+    private Set<User> gameUser;
 }

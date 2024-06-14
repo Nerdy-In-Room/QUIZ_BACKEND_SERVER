@@ -11,6 +11,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
@@ -26,14 +28,18 @@ import org.springframework.web.servlet.ModelAndView;
 @RequiredArgsConstructor
 public class RoomController {
 
+    private static final Logger log = LoggerFactory.getLogger(RoomController.class);
     private final RoomProducerService roomProducerService;
     private final RoomService roomService;
 
     @PostMapping(value = "/room")
-    public String createRoom(RoomCreateRequest roomRequest) {
+    public ModelAndView createRoom(RoomCreateRequest roomRequest) throws IllegalAccessException {
         roomRequest.setMasterEmail("sample@master.com");
-        long roomId = roomProducerService.createRoom(roomRequest);
-        return "redirect:/room/" + roomId;
+        RoomEnterResponse roomEnterResponse = roomProducerService.createRoom(roomRequest);
+        Map<String, Object> map = new HashMap<>();
+        map.put("roomInfo", roomEnterResponse);
+
+        return new ModelAndView("room", map);
     }
 
     @GetMapping("/room-list")
@@ -42,14 +48,17 @@ public class RoomController {
         Page<RoomListResponse> roomListResponses = roomProducerService.roomList(index);
         Map<String, Object> map = new HashMap<>();
         map.put("roomList", roomListResponses);
+
         return new ModelAndView("index", map);
     }
 
     @GetMapping("/room/{roomId}")
-    public ModelAndView enterRoom(@PathVariable Long roomId) {
+    public ModelAndView enterRoom(@PathVariable Long roomId) throws IllegalAccessException {
+        log.info("room Id: {}", roomId);
         RoomEnterResponse roomEnterResponse = roomService.enterRoom(roomId);
         Map<String, Object> map = new HashMap<>();
         map.put("roomInfo", roomEnterResponse);
+
         return new ModelAndView("room", map);
     }
 
@@ -57,6 +66,7 @@ public class RoomController {
     @ResponseBody
     public ResponseEntity<RoomModifyResponse> modifyRoom(@PathVariable Long roomId, RoomModifyRequest request) {
         RoomModifyResponse roomModifyResponse = roomService.modifyRoom(request, roomId);
+
         return ResponseEntity.ok(roomModifyResponse);
     }
 }
