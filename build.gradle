@@ -51,6 +51,9 @@ dependencies {
 
     //jwt
     implementation 'com.auth0:java-jwt:4.0.0'
+
+    //swagger
+    implementation 'io.springfox:springfox-boot-starter:3.0.0'
 }
 
 tasks.named('test') {
@@ -61,10 +64,18 @@ tasks.test {
     ignoreFailures = true
 }
 
+task updateSubmodule(type: Exec) {
+    commandLine 'git', 'submodule', 'update', '--remote'
+}
+
 task copyYML(type: Copy){
     copy{
         from './BACKEND_SERVER_ENV'
         include "*.yaml"
         into './src/main/resources'
     }
+}
+
+tasks.withType(JavaCompile) {
+    dependsOn updateSubmodule, copyYML
 }
