@@ -38,7 +38,7 @@ public class RoomProducerService {
         User user = new User(1L, Role.ADMIN, false);
 
         Game game = gameRepository.save(
-                new Game(String.valueOf(roomId), 1, false, new HashSet<>()));
+        new Game(String.valueOf(roomId), 1, false, new HashSet<>()));
 
         game.getGameUser().add(user);
         gameRepository.save(game);
