@@ -1,7 +1,7 @@
 package com.example.quiz.service;
 
+import com.example.quiz.config.websocket.WebSocketEventListener;
 import com.example.quiz.dto.room.request.RoomCreateRequest;
-import com.example.quiz.dto.room.response.RoomEnterResponse;
 import com.example.quiz.dto.room.response.RoomListResponse;
 import com.example.quiz.entity.Game;
 import com.example.quiz.entity.Room;
@@ -9,7 +9,6 @@ import com.example.quiz.entity.User;
 import com.example.quiz.enums.Role;
 import com.example.quiz.repository.GameRepository;
 import com.example.quiz.repository.RoomRepository;
-import java.util.ArrayList;
 import java.util.HashSet;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
@@ -30,41 +29,34 @@ public class RoomProducerService {
 
     private final RoomRepository roomRepository;
     private final GameRepository gameRepository;
+    private final WebSocketEventListener webSocketEventListener;
 
-    public RoomEnterResponse createRoom(RoomCreateRequest roomRequest) {
+    public long createRoom(RoomCreateRequest roomRequest) {
         Room room = roomRequest.toEntity();
         long roomId = roomRepository.save(room).getRoomId();
 
         User user = new User(1L, Role.ADMIN, false);
 
         Game game = gameRepository.save(
-        new Game(String.valueOf(roomId), 1, false, new HashSet<>()));
+                new Game(String.valueOf(roomId), 1, false, new HashSet<>()));
 
         game.getGameUser().add(user);
         gameRepository.save(game);
 
         // kafkaTemplate.send(TOPIC, roomId, room);
 
-        return new RoomEnterResponse(room);
+        return roomId;
     }
 
     public Page<RoomListResponse> roomList(int index) {
         Pageable pageable = PageRequest.of(index, PAGE_SIZE, Sort.by("roomId").descending());
 
-        Page<RoomListResponse> roomListResponsePage = roomRepository.findAllByRemoveStatus(false, pageable)
+        return roomRepository.findAllByRemoveStatus(false, pageable)
                 .map(room -> {
                     RoomListResponse roomListResponse = new RoomListResponse(room);
-                    Game game = gameRepository.findById(String.valueOf(room.getRoomId())).orElseThrow();
-                    roomListResponse.setCurrentPeople(game.getGameUser().size());
+                    roomListResponse.setCurrentPeople(webSocketEventListener.getSubscriptionCount(room.getRoomId()));
+
                     return roomListResponse;
                 });
-
-        if (roomListResponsePage.isEmpty()) {
-            // simpMessagingTemplate.convertAndSend("/room", "[]");
-            log.info("list empty");
-            return null;
-        }
-
-        return roomListResponsePage;
     }
 }

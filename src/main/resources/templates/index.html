@@ -22,6 +22,8 @@
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"
             integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM"
             crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/sockjs-client/1.4.0/sockjs.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
     <script defer src="/script/room.js"></script>
 </head>
 <body>
@@ -30,30 +32,32 @@
 </div>
 <button id="roomCreate" type="button" data-toggle="modal" data-target="#roomCreateModal">방 만들기</button>
 <div th:unless="${roomList == null or roomList.empty}">
-    <table>
-        <thead>
-        <tr>
-            <th>Room Id</th>
-            <th>Room Name</th>
-            <th>topic Id</th>
-            <th>Max People</th>
-            <th>Quiz Count</th>
-            <th>Current People</th>
-            <th></th>
-        </tr>
-        </thead>
-        <tbody>
-        <tr th:each="room : ${roomList}">
-            <td th:text="${room.roomId}"></td>
-            <td th:text="${room.roomName}"></td>
-            <td th:text="${room.topicId}"></td>
-            <td th:text="${room.maxPeople}"></td>
-            <td th:text="${room.quizCnt}"></td>
-            <td th:text="${room.currentPeople}"></td>
-            <td><a th:data-roomid="${room.roomId}" th:href="@{'/room/' + ${room.roomId}}">enter</a></td>
-        </tr>
-        </tbody>
-    </table>
+    <div id="roomsContainer" th:data-rooms="${roomIds}">
+        <table id="room-table">
+            <thead>
+            <tr>
+                <th>Room Id</th>
+                <th>Room Name</th>
+                <th>topic Id</th>
+                <th>Max People</th>
+                <th>Quiz Count</th>
+                <th>Current People</th>
+                <th></th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="room : ${roomList.content}" th:id="'room-' + ${room.roomId}">
+                <td th:text="${room.roomId}"></td>
+                <td th:text="${room.roomName}"></td>
+                <td th:text="${room.topicId}"></td>
+                <td th:text="${room.maxPeople}"></td>
+                <td th:text="${room.quizCnt}"></td>
+                <td class="current-people" th:text="${room.currentPeople}"></td>
+                <td><a th:data-roomid="${room.roomId}" th:href="@{'/room/' + ${room.roomId}}">enter</a></td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
 </div>
 <div th:unless="${roomList == null or roomList.empty}">
     <span th:if="${roomList.first}">First</span>
@@ -121,7 +125,6 @@
                     <button type="submit" class="btn btn-primary">방 만들기</button>
                 </div>
             </form>
-
         </div>
     </div>
 </div>
