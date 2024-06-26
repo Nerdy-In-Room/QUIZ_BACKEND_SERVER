@@ -9,6 +9,7 @@ import lombok.Setter;
 @Setter
 @Getter
 public class RoomEnterResponse {
+    private Long roomId;
     private String roomName;
     private Long topicId;
     private Integer maxPeople;
@@ -17,6 +18,7 @@ public class RoomEnterResponse {
 
     @Builder
     public RoomEnterResponse (Room room) {
+        this.roomId = room.getRoomId();
         this.roomName = room.getRoomName();
         this.topicId = room.getTopicId();
         this.maxPeople = room.getMaxPeople();
