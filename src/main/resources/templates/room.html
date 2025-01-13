@@ -44,11 +44,18 @@
     </tr>
     </thead>
     <tbody id="participants">
-    <tr th:each="participant : ${roomInfo.participants}" th:attr="data-user-id=${participant.id}">
+    <tr th:attr="data-user-id=${participant.id}" th:each="participant : ${roomInfo.participants}">
         <td th:text="${participant.id}"></td>
         <td th:text="${participant.username}"></td>
-        <td th:text="${participant.readyStatus ? 'Ready' : 'Not Ready'}"
-            th:classappend="${participant.readyStatus ? 'ready-true' : 'ready-false'}">
+        <td>
+        <span th:if="${participant.role ne T(com.example.quiz.enums.Role).ADMIN}"
+              th:text="${participant.readyStatus ? 'Ready' : 'Not Ready'}"
+              th:classappend="${participant.readyStatus ? 'ready-true' : 'ready-false'}">
+        </span>
+            <span th:if="${participant.role eq T(com.example.quiz.enums.Role).ADMIN}">
+            <!-- Admin은 Ready Status 미표시 -->
+            방장
+        </span>
         </td>
     </tr>
     </tbody>
