@@ -48,13 +48,8 @@ public class GameService {
 
         // 준비상태 토글
         toggle(game, currentUser);
-
-        // 역할에 따라서 로직 분기
-        if (isNormalUser(currentUser)) {
-            return handleUserReadyStatus(user, currentUser, inGameUserSet);
-        } else {
-            return handleAdminReadyStatus(user, currentUser, inGameUserSet);
-        }
+        // User 준비상태 따라서 DTO 반환
+        return handleReadyStatus(user, currentUser, inGameUserSet);
     }
 
     private InGameUser findUser(Set<InGameUser> inGameUserSet, long userId) {
@@ -72,12 +67,8 @@ public class GameService {
         game.getGameUser().add(inGameUser);
         gameRepository.save(game);
     }
-
-    private boolean isNormalUser(InGameUser inGameUser) {
-        return inGameUser.getRole().equals(Role.USER);
-    }
-
-    private ResponseMessage handleUserReadyStatus(User user, InGameUser inGameUser, Set<InGameUser> inGameUserSet) {
+    // User
+    private ResponseMessage handleReadyStatus(User user, InGameUser inGameUser, Set<InGameUser> inGameUserSet) {
         if(isAllReady(inGameUserSet)) {
             return new ResponseMessage(user.getId(), user.getEmail(), user.getRole(), inGameUser.isReadyStatus(), true);
         }
@@ -86,22 +77,22 @@ public class GameService {
         }
     }
 
-    private ResponseMessage handleAdminReadyStatus(User user, InGameUser inGameUser, Set<InGameUser> inGameUserSet) {
-        if(isAllReady(inGameUserSet)) {
-            return new ResponseMessage(user.getId(), user.getEmail(), user.getRole(), inGameUser.isReadyStatus(), true);
-        }
-        else {
-            return new ResponseMessage(user.getId(), user.getEmail(), user.getRole(), inGameUser.isReadyStatus(), false);
-        }
-    }
-
+    // User 인 사람이 모두 Ready 인지 판단
     private boolean isAllReady(Set<InGameUser> inGameUserSet) {
         for(InGameUser inGameUser : inGameUserSet) {
+            // Admin 통과
+            if(!isUser(inGameUser)) {
+                continue;
+            }
             if(!inGameUser.isReadyStatus()) {
                 return false;
             }
         }
         return true;
+    }
+
+    private boolean isUser(InGameUser inGameUser) {
+        return inGameUser.getRole() == Role.USER;
     }
 
     @Transactional

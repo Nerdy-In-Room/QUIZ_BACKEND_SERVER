@@ -34,7 +34,16 @@
     Start Game
 </button>
 
-<h2>Users in Room</h2>
+<!-- Game Status: 처음엔 "Not Ready"라고 가정, 이후 WebSocket 메시지에 따라 변경 -->
+<h2>
+    Participants
+    <span style="margin-left: 20px;">
+        [Game Status:
+        <span id="gameStatus">Not Ready</span>
+        ]
+    </span>
+</h2>
+
 <table id="userTable">
     <thead>
     <tr>
@@ -44,28 +53,22 @@
     </tr>
     </thead>
     <tbody id="participants">
-    <tr th:each="participant : ${roomInfo.participants}" th:attr="data-user-id=${participant.id}">
+    <tr th:attr="data-user-id=${participant.id}" th:each="participant : ${roomInfo.participants}">
         <td th:text="${participant.id}"></td>
         <td th:text="${participant.username}"></td>
-        <td th:text="${participant.readyStatus ? 'Ready' : 'Not Ready'}"
-            th:classappend="${participant.readyStatus ? 'ready-true' : 'ready-false'}">
+        <td>
+        <span th:if="${participant.role ne T(com.example.quiz.enums.Role).ADMIN}"
+              th:text="${participant.readyStatus ? 'Ready' : 'Not Ready'}"
+              th:classappend="${participant.readyStatus ? 'ready-true' : 'ready-false'}">
+        </span>
+            <span th:if="${participant.role eq T(com.example.quiz.enums.Role).ADMIN}">
+            <!-- Admin은 Ready Status 미표시 -->
+            방장
+        </span>
         </td>
     </tr>
     </tbody>
 </table>
-
-<!-- 디버깅을 위한 참가자 목록 출력 (옵션) -->
-<h2>Participants List (디버깅용)</h2>
-<ul>
-    <li th:each="participant : ${roomInfo.participants}"
-        th:text="'ID: ' + ${participant.id} + ', Name: ' + ${participant.username} + ', Ready: ' + (${participant.readyStatus} ? 'Yes' : 'No') + ', Role: ' + (${participant.role == T(com.example.quiz.enums.Role).ADMIN ? 'ADMIN' : 'USER'})">
-    </li>
-</ul>
-
-<script>
-    // 클라이언트 측에서 isAdmin을 읽어 변수로 설정
-    const isAdminElement = document.getElementById('isAdmin');
-</script>
 
 </body>
 </html>
