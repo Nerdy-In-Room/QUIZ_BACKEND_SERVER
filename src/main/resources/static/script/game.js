@@ -56,11 +56,23 @@ function setupReadyButton(roomId, ready) {
 
 function handleServerMessage(message) {
     updateParticipantStatus(message.userId, message.readyStatus);
-
-    if (message.userId === 1) {
-        updateGameStatus(message.readyStatus);
+    // 게임 상태 업데이트
+    if (message.hasOwnProperty("allReadyStatus")) {
+        updateGameStatus(message.allReadyStatus);
     } else {
-        // console.warn("Unknown message type:", message);
+        console.warn("Unknown message type:", message);
+    }
+}
+
+function updateGameStatus(isAllReady) {
+    const gameStatusElem = document.getElementById("gameStatus");
+    if(!gameStatusElem) return;
+
+    if(isAllReady) {
+        gameStatusElem.textContent = "Ready";
+    }
+    else {
+        gameStatusElem.textContent = "Not Ready";
     }
 }
 
