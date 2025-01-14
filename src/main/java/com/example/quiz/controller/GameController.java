@@ -25,12 +25,13 @@ public class GameController {
         log.info("user ID is {}", requestUserId.userId());
         ResponseMessage responseMessage = gameService.toggleReadyStatus(id, requestUserId.userId());
 
-        log.info("id : {} role : {}, userId : {}, readyStatus : {}, email : {}" ,
+        log.info("id : {} role : {}, userId : {}, readyStatus : {}, email : {}, allReadyStatus : {}" ,
                 id,
                 responseMessage.role(),
                 responseMessage.userId(),
                 responseMessage.readyStatus(),
-                responseMessage.email()
+                responseMessage.email(),
+                responseMessage.allReadyStatus()
         );
         messagingTemplate.convertAndSend("/pub/room/"+id, responseMessage);
     }
