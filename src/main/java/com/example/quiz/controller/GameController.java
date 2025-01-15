@@ -41,7 +41,6 @@ public class GameController {
 
     @MessageMapping("/{id}/start")
     public void start(@DestinationVariable String id) {
-        // TODO 인게임 화면에 보여질 정보들 DTO에 담아서 보낼것.
         Map<String, Object> msg = new HashMap<>();
         msg.put("gameStarted", true);
 
