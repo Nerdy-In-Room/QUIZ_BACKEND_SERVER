@@ -62,8 +62,9 @@ public class RoomController {
     }
 
     @GetMapping("/quiz/{roomId}")
-    public ModelAndView enterQuizRoom(@PathVariable Long roomId) throws IllegalAccessException {
-        ResponseQuiz responseQuiz = roomService.enterQuizRoom(roomId);
+    public ModelAndView enterQuizRoom(@PathVariable Long roomId, @LoginUser LoginUserRequest loginUserRequest) throws IllegalAccessException {
+        // TODO 인게임 화면에 보여질 정보들 DTO에 담아서 보낼것.
+        ResponseQuiz responseQuiz = roomService.enterQuizRoom(roomId, loginUserRequest);
         Map<String, Object> map = new HashMap<>();
         map.put("responseQuiz", responseQuiz);
 

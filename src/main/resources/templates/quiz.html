@@ -1,10 +1,134 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
-    <title>Title</title>
+    <title>Quiz In-Game</title>
+    <style>
+        /* 헤더 스타일 */
+        header {
+            display: flex; /* 플렉스 컨테이너 설정 */
+            justify-content: space-between; /* 양쪽 정렬 */
+            align-items: center; /* 세로 가운데 정렬 */
+            padding: 1rem;
+            background-color: #f5f5f5;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .user-info {
+            display: flex; /* 플렉스 컨테이너 */
+            gap: 1rem; /* 항목 간 간격 */
+            font-size: 0.9rem; /* 폰트 크기 */
+        }
+
+        .user-info span {
+            white-space: nowrap; /* 텍스트 줄바꿈 방지 */
+            display: inline-flex;
+        }
+
+        /* 메인 컨텐츠 스타일 */
+        main {
+            padding: 1rem;
+        }
+    </style>
+</head>
+    <!-- 예: SockJS, stomp.js가 필요하다면 추가 -->
+    <!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/sockjs-client/1.4.0/sockjs.min.js"></script> -->
+    <!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script> -->
+
+    <!-- quiz.js 등 스크립트 연결 예정 -->
+    <link rel="stylesheet" href="/css/game.css">
 </head>
 <body>
 
+<!-- 상단 영역 -->
+<header>
+    <h1>Quiz Game Room</h1>
+    <div style="float: right; text-align: right;">
+        <div style="display: flex; align-items: center; gap: 1rem; justify-content: flex-end;">
+            <span style="font-weight: bold;">User Info:</span>
+            <span>UserID: <span th:text="${responseQuiz.userId}"></span></span>
+            <span>Email: <span th:text="${responseQuiz.email}"></span></span>
+        </div>
+    </div>
+</header>
+
+<hr style="clear: both;" />
+
+<!-- 게임 상태 영역 -->
+<section>
+    <h2>Game Status</h2>
+    <!-- 제한 시간 (기본 30초, JS에서 카운트다운 예정) -->
+    <p>
+        TimeLeft: <span id="timeLeft">30</span> seconds
+    </p>
+    <!-- RemainQuiz: responseQuiz.quizCount를 기본값으로 표시 -->
+    <p>
+        RemainQuiz: <span id="remainQuiz" th:text="${responseQuiz.quizCount}"></span>
+    </p>
+</section>
+
+<!-- 문제 영역 -->
+<section>
+    <h2>Problem</h2>
+    <!-- 아직 문제를 어떻게 가져오는지 정해지지 않았으므로, JS에서 세팅 -->
+    <p id="problem">문제 내용이 표시될 영역</p>
+
+    <!-- 사용자 정답 입력 폼 -->
+    <div>
+        <input type="text" id="answerInput" placeholder="Write your answer here" />
+        <button id="answerBtn">Submit</button>
+    </div>
+</section>
+
+<!-- 현재 정답자 -->
+<section>
+    <h2>Current Winner</h2>
+    <!-- 정답자 표시 -->
+    <p>Winner: <span id="winner">아직 없음</span></p>
+</section>
+
+<!-- 최종 우승자 -->
+<section>
+    <h2>Final Winner</h2>
+    <p>Final Winner: <span id="finalWinner">???</span></p>
+    <!-- 동점자가 있으면 JS 로직에서 여러 명을 표시하도록 확장 가능 -->
+</section>
+
+<!-- 디버깅용(선택 사항)
+<p>quizId: <span th:text="${responseQuiz.quizId}"></span></p> -->
+
+<script>
+    // 여기에 JS 코드를 넣어도 되고, 별도의 quiz.js 파일로 분리할 수 있습니다.
+
+    // 예시: 페이지 로드 시 남은 시간 카운트다운
+    let timeLeft = 30;
+    const timeLeftElem = document.getElementById("timeLeft");
+    if (timeLeftElem) {
+        const timer = setInterval(() => {
+            timeLeft--;
+            timeLeftElem.textContent = timeLeft;
+            if (timeLeft <= 0) {
+                clearInterval(timer);
+                alert("시간 종료!");
+                // 추가 로직: 자동으로 답안 제출 or 문제 교체 등
+            }
+        }, 1000);
+    }
+
+    // RemainQuiz는 #remainQuiz 요소, 문제 내용은 #problem 요소,
+    // 정답자 / 최종 승자는 #winner / #finalWinner 요소에 실시간 업데이트 가능.
+
+    // 예) 정답 제출 버튼
+    const answerBtn = document.getElementById("answerBtn");
+    if (answerBtn) {
+        answerBtn.addEventListener("click", () => {
+            const userAnswer = document.getElementById("answerInput").value;
+            console.log("사용자 입력:", userAnswer);
+
+            // 여기서 서버로 userAnswer 전송 (Ajax or WebSocket)
+            // ...
+        });
+    }
+</script>
 </body>
 </html>

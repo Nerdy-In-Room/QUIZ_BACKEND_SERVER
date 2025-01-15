@@ -115,7 +115,7 @@ public class GameService {
             int pickNumber = random.nextInt(size);
             Quiz quiz = allByTopicId.get(pickNumber);
             questionList.add(quiz.getId());
-            return new ResponseQuiz(quiz.getId(), false);
+            return new ResponseQuiz(userInfoAnswer.userId(), "songkc123@naver.com", quiz.getTopicId(), 3);
         } else {
             while (true) {
                 int pickNumber = random.nextInt(size);
@@ -124,7 +124,7 @@ public class GameService {
                 if (!questionList.contains(quiz.getId())) {
                     questionList.add(quiz.getId());
 
-                    return new ResponseQuiz(quiz.getId(), false);
+                    return new ResponseQuiz(userInfoAnswer.userId(), "songkc123@naver.com", quiz.getTopicId(), 3);
                 }
             }
         }
@@ -134,6 +134,6 @@ public class GameService {
 
         Quiz quiz = quizRepository.findById(requestAnswer.quizId()).get();
 
-        return new ResponseQuiz(requestAnswer.userId(), quiz.getAnswer().equals(requestAnswer.answer()));
+        return new ResponseQuiz(requestAnswer.userId(), "songkc123@naver.com", quiz.getTopicId(), 3);
     }
 }

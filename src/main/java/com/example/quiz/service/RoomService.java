@@ -58,8 +58,11 @@ public class RoomService {
         return RoomMapper.INSTANCE.RoomToRoomEnterResponse(room, inGameUser, game.getGameUser());
     }
 
-    public ResponseQuiz enterQuizRoom(long roomId) throws IllegalAccessException {
-        return new ResponseQuiz(roomRepository.findById(roomId).orElseThrow().getRoomId(), true);
+    public ResponseQuiz enterQuizRoom(long roomId,  LoginUserRequest loginUserRequest) throws IllegalAccessException {
+        User user = userRepository.findById(loginUserRequest.userId()).orElseThrow(IllegalAccessException::new);
+        Room room = findRoomById(roomId);
+
+        return RoomMapper.INSTANCE.RoomToResponseQuiz(user, room);
     }
 
     @Transactional
