@@ -3,6 +3,7 @@ window.onbeforeunload = disconnect;
 
 let stompClient;
 let subscription;
+let allReady;
 
 const RECONNECT_DELAY = 5000;
 const MAX_RECONNECT_ATTEMPTS = 10;
@@ -27,7 +28,7 @@ function connect() {
             });
         } else {
             startButton.addEventListener("click", () => {
-
+                setupStartButton(roomId);
             });
         }
 
@@ -37,8 +38,12 @@ function connect() {
 
             if (parseData.hasOwnProperty('roomId')) {
                 updateParticipant(parseData);
-            } else {
+            } else if (parseData.hasOwnProperty("userId") && parseData.hasOwnProperty("readyStatus")) {
                 handleServerMessage(parseData);
+            } // 3) 전체 게임 시작 신호
+            else if (parseData.hasOwnProperty("gameStarted") && parseData.gameStarted === true) {
+                // 모든 클라이언트 동시에 퀴즈 페이지로 이동
+                window.location.href = `/quiz/${roomId}`;
             }
         });
 
@@ -54,6 +59,17 @@ function setupReadyButton(roomId, ready) {
     stompClient.send(`/room/${roomId}/ready`, {}, JSON.stringify({userId: userId}));
 }
 
+function setupStartButton(roomId) {
+    if(!allReady) {
+        alert("사용자들이 모두 준비가 완료되지 않았습니다.");
+    }
+    else {
+        // 게임 시작 메시지 전송 → 서버가 "gameStarted" 브로드캐스트
+        stompClient.send(`/room/${roomId}/start`, {}, JSON.stringify({}));
+        console.log("Sent start game request.");
+    }
+}
+
 function handleServerMessage(message) {
     updateParticipantStatus(message.userId, message.readyStatus);
     // 게임 상태 업데이트
@@ -67,6 +83,7 @@ function handleServerMessage(message) {
 function updateGameStatus(isAllReady) {
     const gameStatusElem = document.getElementById("gameStatus");
     if(!gameStatusElem) return;
+    allReady = isAllReady;
 
     if(isAllReady) {
         gameStatusElem.textContent = "Ready";

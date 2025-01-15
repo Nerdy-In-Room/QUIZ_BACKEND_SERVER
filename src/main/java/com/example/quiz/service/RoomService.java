@@ -1,6 +1,7 @@
 package com.example.quiz.service;
 
 import com.example.quiz.dto.User.LoginUserRequest;
+import com.example.quiz.dto.response.ResponseQuiz;
 import com.example.quiz.dto.room.ChangeCurrentOccupancies;
 import com.example.quiz.dto.room.request.RoomModifyRequest;
 import com.example.quiz.dto.room.response.RoomEnterResponse;
@@ -55,6 +56,10 @@ public class RoomService {
         simpMessagingTemplate.convertAndSend("/pub/room/" + roomId, inGameUser);
 
         return RoomMapper.INSTANCE.RoomToRoomEnterResponse(room, inGameUser, game.getGameUser());
+    }
+
+    public ResponseQuiz enterQuizRoom(long roomId) throws IllegalAccessException {
+        return new ResponseQuiz(roomRepository.findById(roomId).orElseThrow().getRoomId(), true);
     }
 
     @Transactional
