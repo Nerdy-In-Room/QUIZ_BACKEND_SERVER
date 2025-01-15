@@ -13,6 +13,9 @@ import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.HashMap;
+import java.util.Map;
+
 @Slf4j
 @RequiredArgsConstructor
 @RestController
@@ -36,8 +39,17 @@ public class GameController {
         messagingTemplate.convertAndSend("/pub/room/"+id, responseMessage);
     }
 
+    @MessageMapping("/{id}/start")
+    public void start(@DestinationVariable String id) {
+        // TODO 인게임 화면에 보여질 정보들 DTO에 담아서 보낼것.
+        Map<String, Object> msg = new HashMap<>();
+        msg.put("gameStarted", true);
+
+        messagingTemplate.convertAndSend("/pub/room/"+id, msg);
+    }
+
     @MessageMapping("/{id}/send")
-    public void sendQuize(@DestinationVariable String id, RequestUserInfoAnswer userInfoAnswer){
+    public void sendQuiz(@DestinationVariable String id, RequestUserInfoAnswer userInfoAnswer){
         log.info("응답이 들어왔습니다");
         ResponseQuiz responseQuiz = gameService.sendQuiz(id,userInfoAnswer);
 
@@ -45,7 +57,7 @@ public class GameController {
     }
 
     @MessageMapping("/{id}/check")
-    public void checkQuize(@DestinationVariable String id, RequestAnswer requestAnswer){
+    public void checkQuiz(@DestinationVariable String id, RequestAnswer requestAnswer){
         log.info("응답");
         ResponseQuiz responseQuiz = gameService.checkAnswer(id, requestAnswer);
 
