@@ -4,7 +4,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-import java.util.HashMap;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
 @Configuration
@@ -12,14 +12,14 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class BeanConfiguration {
 
     @Bean
-    public HashMap<Long, Long> alreadyInGameUser() {
+    public ConcurrentHashMap<Long, Long> alreadyInGameUser() {
 
-        return new HashMap<>();
+        return new ConcurrentHashMap<>();
     }
 
     @Bean
-    public HashMap<Long, AtomicInteger> roomSubscriptionCount() {
+    public ConcurrentHashMap<Long, AtomicInteger> roomSubscriptionCount() {
 
-        return new HashMap<>();
+        return new ConcurrentHashMap<>();
     }
 }

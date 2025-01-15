@@ -1,5 +1,17 @@
-window.onload = connect;
-window.onbeforeunload = disconnect;
+window.onload = () => {
+    const [navigationEntry] = performance.getEntriesByType('navigation');
+
+    if (navigationEntry) {
+        if (navigationEntry.type === 'navigate' || navigationEntry.type === 'reload') {
+            console.log('connect');
+            connect();
+        }
+    }
+};
+
+window.onbeforeunload = () => {
+    disconnect();
+};
 
 let stompClient;
 let subscription;
@@ -114,21 +126,6 @@ function updateParticipantStatus(userId, status) {
     }
 
     statusCell.innerText = status ? "Ready" : "Not Ready";
-}
-
-function scheduleReconnect() {
-    if (reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) {
-        console.error(`Max reconnect attempts reached (${MAX_RECONNECT_ATTEMPTS}). Giving up.`);
-
-        return;
-    }
-
-    reconnectAttempts++;
-    console.log(`Attempting to reconnect in ${RECONNECT_DELAY / 1000} seconds...`);
-
-    setTimeout(() => {
-        connect();
-    }, RECONNECT_DELAY);
 }
 
 function updateParticipant(participant) {
