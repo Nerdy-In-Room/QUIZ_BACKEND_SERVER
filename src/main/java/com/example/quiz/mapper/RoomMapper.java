@@ -1,5 +1,6 @@
 package com.example.quiz.mapper;
 
+import com.example.quiz.dto.response.QuizRoomEnterResponse;
 import com.example.quiz.dto.response.ResponseQuiz;
 import com.example.quiz.dto.room.request.RoomCreateRequest;
 import com.example.quiz.dto.room.response.RoomEnterResponse;
@@ -7,7 +8,6 @@ import com.example.quiz.dto.room.response.RoomListResponse;
 import com.example.quiz.dto.room.response.RoomResponse;
 import com.example.quiz.entity.Room;
 import com.example.quiz.entity.User;
-import com.example.quiz.enums.Role;
 import com.example.quiz.vo.InGameUser;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
@@ -29,8 +29,12 @@ public interface RoomMapper {
 
     @Mapping(target = "roomId", source = "room.roomId")
     @Mapping(target = "participants", source = "participants")
-    @Mapping(source = "inGameUser", target = "inGameUser")
+    @Mapping(target = "inGameUser", source = "inGameUser")
     RoomEnterResponse RoomToRoomEnterResponse(Room room, InGameUser inGameUser, Set<InGameUser> participants);
 
-    ResponseQuiz RoomToResponseQuiz(User user, Room room);
+    @Mapping(target = "quizId", source = "room.topicId")
+    @Mapping(target = "userId", source = "inGameUser.id")
+    @Mapping(target = "email", source = "user.email")
+    @Mapping(target = "role", source = "inGameUser.role")
+    QuizRoomEnterResponse RoomToQuizRoomEnterResponse(InGameUser inGameUser, User user, Room room);
 }

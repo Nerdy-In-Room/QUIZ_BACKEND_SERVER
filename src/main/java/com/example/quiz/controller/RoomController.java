@@ -2,6 +2,7 @@ package com.example.quiz.controller;
 
 import com.example.quiz.config.auth.annotation.user.LoginUser;
 import com.example.quiz.dto.User.LoginUserRequest;
+import com.example.quiz.dto.response.QuizRoomEnterResponse;
 import com.example.quiz.dto.response.ResponseQuiz;
 import com.example.quiz.dto.room.request.RoomCreateRequest;
 import com.example.quiz.dto.room.request.RoomModifyRequest;
@@ -63,11 +64,11 @@ public class RoomController {
 
     @GetMapping("/quiz/{roomId}")
     public ModelAndView enterQuizRoom(@PathVariable Long roomId, @LoginUser LoginUserRequest loginUserRequest) throws IllegalAccessException {
-        // TODO 인게임 화면에 보여질 정보들 DTO에 담아서 보낼것.
-        ResponseQuiz responseQuiz = roomService.enterQuizRoom(roomId, loginUserRequest);
+        QuizRoomEnterResponse quizRoomEnterResponse = roomService.enterQuizRoom(roomId, loginUserRequest);
         Map<String, Object> map = new HashMap<>();
-        map.put("responseQuiz", responseQuiz);
+        map.put("responseQuiz", quizRoomEnterResponse);
 
+        log.info("responseQuiz={}", quizRoomEnterResponse);
         return new ModelAndView("quiz", map);
     }
 

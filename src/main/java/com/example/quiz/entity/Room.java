@@ -38,4 +38,10 @@ public class Room {
             this.topicId = topicId;
         }
     }
+
+    public void changeQuizCount(Integer quizCount) {
+        if(quizCount != null) {
+            this.quizCount = quizCount;
+        }
+    }
 }

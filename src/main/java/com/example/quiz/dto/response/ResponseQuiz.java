@@ -1,4 +1,4 @@
 package com.example.quiz.dto.response;
 
-public record ResponseQuiz(Long userId, String email, Long quizId, Integer quizCount) {
+public record ResponseQuiz(String problem, String correctAnswer, String discription) {
 }
