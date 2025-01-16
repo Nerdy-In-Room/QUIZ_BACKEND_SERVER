@@ -101,39 +101,17 @@ public class GameService {
         // 문제를 제출할 때, 문제의 id와 문제 내용을 전달한
         // 사용자는 유저의 아이디, 문제 id, 정답을 같이 전달함
         // 서버는 문제 id를 사용하여 사용자의 답과 정답이 맞는 확인하고 전달함
-
-        List<Long> questionList = userInfoAnswer.questionList();
-
-        // TODO: 옳바른 예외를 발생시키게 찾아보자
-        Room room = roomRepository.findById(Long.parseLong(roomId)).orElseThrow(IllegalAccessError::new);
-        Long topicId = room.getTopicId();
-        List<Quiz> allByTopicId = quizRepository.findAllByTopicId(topicId);
-        int size = allByTopicId.size();
-        Random random = new Random();
-
-        if (userInfoAnswer.questionList().isEmpty()) {
-            int pickNumber = random.nextInt(size);
-            Quiz quiz = allByTopicId.get(pickNumber);
-            questionList.add(quiz.getId());
-            return new ResponseQuiz(userInfoAnswer.userId(), "songkc123@naver.com", quiz.getTopicId(), 3);
-        } else {
-            while (true) {
-                int pickNumber = random.nextInt(size);
-                Quiz quiz = allByTopicId.get(pickNumber);
-
-                if (!questionList.contains(quiz.getId())) {
-                    questionList.add(quiz.getId());
-
-                    return new ResponseQuiz(userInfoAnswer.userId(), "songkc123@naver.com", quiz.getTopicId(), 3);
-                }
-            }
-        }
+        Room room = roomRepository.findById(Long.valueOf(roomId)).orElseThrow(() -> new RuntimeException("Room not found"));
+        int count = room.getQuizCount()-1;
+        room.changeQuizCount(count);
+        roomRepository.save(room);
+        return new ResponseQuiz("prob", "correctAnswer", "discription");
     }
     // TODO ResponseQuiz 수정
     public ResponseQuiz checkAnswer(String id, RequestAnswer requestAnswer) {
 
         Quiz quiz = quizRepository.findById(requestAnswer.quizId()).get();
 
-        return new ResponseQuiz(requestAnswer.userId(), "songkc123@naver.com", quiz.getTopicId(), 3);
+        return new ResponseQuiz("prob", "correctAnswer", "discription");
     }
 }

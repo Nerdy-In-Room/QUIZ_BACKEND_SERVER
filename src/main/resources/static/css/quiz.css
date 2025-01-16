@@ -1,0 +1,25 @@
+/* 헤더 스타일 */
+header {
+    display: flex; /* 플렉스 컨테이너 설정 */
+    justify-content: space-between; /* 양쪽 정렬 */
+    align-items: center; /* 세로 가운데 정렬 */
+    padding: 1rem;
+    background-color: #f5f5f5;
+    border-bottom: 1px solid #ddd;
+}
+
+.user-info {
+    display: flex; /* 플렉스 컨테이너 */
+    gap: 1rem; /* 항목 간 간격 */
+    font-size: 0.9rem; /* 폰트 크기 */
+}
+
+.user-info span {
+    white-space: nowrap; /* 텍스트 줄바꿈 방지 */
+    display: inline-flex;
+}
+
+/* 메인 컨텐츠 스타일 */
+main {
+    padding: 1rem;
+}
