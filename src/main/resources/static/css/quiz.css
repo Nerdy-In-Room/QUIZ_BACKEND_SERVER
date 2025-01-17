@@ -23,3 +23,39 @@ header {
 main {
     padding: 1rem;
 }
+
+.toast {
+    position: fixed;
+    top: 20%;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: #444;
+    color: #fff;
+    padding: 20px 40px; /* 크기를 더 키움 */
+    font-size: 18px; /* 글자 크기 증가 */
+    text-align: center;
+    border-radius: 8px; /* 모서리 둥글게 */
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+    animation: fadeInOut 4s ease-in-out forwards;
+    opacity: 0;
+    z-index: 9999; /* 다른 요소 위에 표시되도록 */
+}
+
+@keyframes fadeInOut {
+    0% {
+        opacity: 0;
+        transform: translate(-50%, -20%);
+    }
+    10% {
+        opacity: 1;
+        transform: translate(-50%, 0);
+    }
+    90% {
+        opacity: 1;
+        transform: translate(-50%, 0);
+    }
+    100% {
+        opacity: 0;
+        transform: translate(-50%, -20%);
+    }
+}
