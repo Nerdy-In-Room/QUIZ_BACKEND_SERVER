@@ -5,7 +5,7 @@ window.addEventListener("load", function () {
     let stompClient = Stomp.over(sock);
 
     stompClient.connect({}, function (frame) {
-        console.log('Connected: ' + frame);
+        stompClient.debug = function(str) {};
 
         stompClient.subscribe('/pub/occupancy', function (message) {
                 let rooms = JSON.parse(message.body);

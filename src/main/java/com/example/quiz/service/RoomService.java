@@ -91,7 +91,7 @@ public class RoomService {
         return new InGameUser(loginUserRequest.userId(), roomId, user.getEmail(), Role.USER, false);
     }
 
-    private int incrementSubscriptionCount(long roomId, Long userId) {
+    private int incrementSubscriptionCount(Long roomId, Long userId) {
         return roomSubscriptionCount.get(roomId).updateAndGet(c -> {
             if (c >= 8) {
                 throw new RuntimeException("Room capacity reached : " + roomId);
@@ -109,13 +109,13 @@ public class RoomService {
         }
     }
 
-    private void checkAlreadyInGameUser(long roomId, long userId) {
+    private void checkAlreadyInGameUser(long userId, long roomId) {
         alreadyInGameUser.compute(userId, (key, existingValue) -> {
             if (existingValue != null && existingValue != roomId) {
                 throw new RuntimeException("already in game user: " + userId);
             }
 
-            return null;
+            return existingValue;
         });
     }
 

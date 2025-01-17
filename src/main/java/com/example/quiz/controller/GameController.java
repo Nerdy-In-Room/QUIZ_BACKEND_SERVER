@@ -25,17 +25,8 @@ public class GameController {
 
     @MessageMapping("/{id}/ready")
     public void ready(@DestinationVariable String id, RequestUserId requestUserId) {
-        log.info("user ID is {}", requestUserId.userId());
         ResponseMessage responseMessage = gameService.toggleReadyStatus(id, requestUserId.userId());
 
-        log.info("id : {} role : {}, userId : {}, readyStatus : {}, email : {}, allReadyStatus : {}" ,
-                id,
-                responseMessage.role(),
-                responseMessage.userId(),
-                responseMessage.readyStatus(),
-                responseMessage.email(),
-                responseMessage.allReadyStatus()
-        );
         messagingTemplate.convertAndSend("/pub/room/"+id, responseMessage);
     }
 
@@ -45,5 +36,19 @@ public class GameController {
         msg.put("gameStarted", true);
 
         messagingTemplate.convertAndSend("/pub/room/"+id, msg);
+    }
+  
+    @MessageMapping("/{id}/send")
+    public void sendQuiz(@DestinationVariable String id, RequestUserInfoAnswer userInfoAnswer){
+        ResponseQuiz responseQuiz = gameService.sendQuiz(id,userInfoAnswer);
+
+        messagingTemplate.convertAndSend("/pub/"+id+"/send", responseQuiz);
+    }
+
+    @MessageMapping("/{id}/check")
+    public void checkQuiz(@DestinationVariable String id, RequestAnswer requestAnswer){
+        ResponseQuiz responseQuiz = gameService.checkAnswer(id, requestAnswer);
+
+        messagingTemplate.convertAndSend("/pub/"+id+"/check",responseQuiz);
     }
 }

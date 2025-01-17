@@ -14,7 +14,7 @@ import java.util.Set;
 @Getter
 @NoArgsConstructor
 @AllArgsConstructor
-@Document(collation = "game")
+@Document
 public class Game {
     @Id
     @Column(nullable = false)

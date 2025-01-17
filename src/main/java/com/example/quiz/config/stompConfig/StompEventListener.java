@@ -39,14 +39,14 @@ public class StompEventListener {
     private final SimpMessagingTemplate messagingTemplate;
     private final StompHeaderAccessorWrapper headerAccessorService;
 
-    private final int BATCH_SIZE = 10;
+    private final int MAX_QUEUE_SIZE = 10;
 
     private ScheduledFuture<?> scheduledFuture;
     private final Map<Long, Long> alreadyInGameUser;
     private final Map<Long, AtomicInteger> roomSubscriptionCount;
     private final AtomicBoolean isProcessing = new AtomicBoolean(false);
-    private final BlockingQueue<ChangeCurrentOccupancies> blockingQueue = new LinkedBlockingQueue<>(BATCH_SIZE);
     private final ScheduledExecutorService scheduledExecutorService = Executors.newSingleThreadScheduledExecutor();
+    private final BlockingQueue<ChangeCurrentOccupancies> changeCurrentOccupanciesQueue = new ArrayBlockingQueue<>(MAX_QUEUE_SIZE * 2);
 
     @EventListener
     @Transactional
@@ -68,7 +68,9 @@ public class StompEventListener {
 
     @EventListener
     public void broadcastCurrentOccupancy(ChangeCurrentOccupancies roomInfo) throws InterruptedException {
-        blockingQueue.put(roomInfo);
+        changeCurrentOccupanciesQueue.remove(roomInfo);
+        changeCurrentOccupanciesQueue.put(roomInfo);
+
         processQueueIfNeeded();
     }
 
@@ -78,7 +80,7 @@ public class StompEventListener {
                 try {
                     broadcastOccupancy();
 
-                    if (blockingQueue.isEmpty()) {
+                    if (changeCurrentOccupanciesQueue.isEmpty()) {
                         scheduledFuture.cancel(false);
                         scheduledFuture = null;
                         isProcessing.set(false);
@@ -91,10 +93,10 @@ public class StompEventListener {
     }
 
     private void broadcastOccupancy() {
-        List<ChangeCurrentOccupancies> batch = new ArrayList<>();
-        blockingQueue.drainTo(batch);
+        List<ChangeCurrentOccupancies> batchList = new ArrayList<>();
+        changeCurrentOccupanciesQueue.drainTo(batchList);
 
-        messagingTemplate.convertAndSend("/pub/occupancy", batch);
+        messagingTemplate.convertAndSend("/pub/occupancy", batchList);
     }
 
     private LoginUserRequest extractLoginUser(SessionUnsubscribeEvent event) throws IllegalAccessException {
@@ -137,7 +139,6 @@ public class StompEventListener {
         AtomicInteger count = roomSubscriptionCount.get(roomId);
 
         if (count == null) {
-            log.warn("Room Id {} subscription count is null", roomId);
 
             return;
         }
@@ -160,6 +161,7 @@ public class StompEventListener {
     private void cleanUpEmptyRoom(Long roomId) {
         roomSubscriptionCount.remove(roomId);
         roomRepository.findById(roomId).ifPresent(Room::removeStatus);
+        gameRepository.removeById(String.valueOf(roomId));
     }
 
     private InGameUser findUser(long userId, long roomId) throws IllegalAccessException {
