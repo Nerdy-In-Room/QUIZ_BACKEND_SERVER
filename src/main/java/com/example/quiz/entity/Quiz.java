@@ -17,11 +17,13 @@ public class Quiz {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    private Long quizId;
 
     private Long topicId;
 
-    private String question;
+    private String problem;
 
-    private String answer;
+    private String correctAnswer;
+
+    private String description;
 }
