@@ -52,6 +52,8 @@ public class StompEventListener {
     @Transactional
     public void handleSessionUnsubscribeEvent(SessionUnsubscribeEvent event) throws IllegalAccessException {
         LoginUserRequest loginUserRequest = extractLoginUser(event);
+        System.out.println(event.getSource());
+
         Long roomId = removeUserFromRoomMapping(loginUserRequest.userId());
         Game game = findGameByRoomId(roomId);
 
@@ -97,6 +99,10 @@ public class StompEventListener {
 
     private LoginUserRequest extractLoginUser(SessionUnsubscribeEvent event) throws IllegalAccessException {
         StompHeaderAccessor accessor = headerAccessorService.wrap(event);
+        log.info("message : {}", event.getMessage());
+        log.info("hearer: {}", event.getMessage().getHeaders());
+        log.info("payload: {}", event.getMessage().getPayload());
+        log.info("host: {}", accessor.getHost());
         LoginUserRequest loginUserRequest = (LoginUserRequest) accessor.getSessionAttributes().get("loginUser");
 
         if (loginUserRequest == null) {
