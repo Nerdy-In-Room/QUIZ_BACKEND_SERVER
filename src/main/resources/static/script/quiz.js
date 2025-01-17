@@ -33,7 +33,7 @@ function connectToQuizUpdates() {
 
     const roomId = window.location.pathname.split("/")[2];
 
-    stompClient.connect({}, function (frame) {
+    stompClient.connect({"heart-beat": "10000,10000"}, function (frame) {
         console.log("Connected to WebSocket:", frame);
         console.log("roomId is {}", roomId);
         // /pub/quiz/{roomId} 경로 구독
@@ -65,7 +65,7 @@ function startTimer() {
         clearInterval(timeIntervalId);
     }
 
-    timeLeft = 30;
+    timeLeft = 5;
     const timeLeftElem = document.getElementById("timeLeft");
 
     timeIntervalId = setInterval(() => {
@@ -74,12 +74,23 @@ function startTimer() {
 
         if (timeLeft <= 0) {
             clearInterval(timeIntervalId);
-            alert("시간 종료!");
+            showToast("시간 종료");
 
             // Admin에서 createQuiz 버튼 활성화
             const createQuizBtn = document.getElementById("createQuizBtn");
             if (createQuizBtn) {
                 createQuizBtn.disabled = false;
+            }
+
+            if (remainQuizValue === 0) {
+                // 최종 우승자 표시
+                const finalWinnerElem = document.getElementById("finalWinner");
+                const finalWinner = finalWinnerElem ? finalWinnerElem.textContent : "알 수 없음";
+
+                // 축하 메시지와 리다이렉트
+                alert(`모든 퀴즈가 끝났습니다! 최종 우승자는 ${finalWinner}입니다! 축하합니다!`);
+                const roomId = window.location.pathname.split("/")[2];
+                window.location.href = `/room/${roomId}`;
             }
         }
     }, 1000);
@@ -102,4 +113,21 @@ function updateQuizStatus(quizData) {
 
     // 제한 시간 갱신
     startTimer();
+}
+
+function showToast(message, duration = 3000) {
+    const toastContainer = document.getElementById("toast-container");
+
+    // Toast 메시지 생성
+    const toast = document.createElement("div");
+    toast.className = "toast";
+    toast.innerText = message;
+
+    // 컨테이너에 추가
+    toastContainer.appendChild(toast);
+
+    // 지정된 시간 후에 삭제
+    setTimeout(() => {
+        toast.remove();
+    }, duration);
 }

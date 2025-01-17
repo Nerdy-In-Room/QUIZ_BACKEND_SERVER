@@ -29,7 +29,7 @@ public class StompConfig implements WebSocketMessageBrokerConfigurer {
 
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry) {
-        registry.addEndpoint("/game", "/updateOccupancy")
+        registry.addEndpoint("/game", "/updateOccupancy", "quiz")
                 .setAllowedOriginPatterns("*")
                 .addInterceptors(jwtHandshakeInterceptor)
                 .withSockJS();

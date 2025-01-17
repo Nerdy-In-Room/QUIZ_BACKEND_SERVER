@@ -19,15 +19,16 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
-import java.util.Random;
-import java.util.Set;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 
 @Slf4j
 @RequiredArgsConstructor
 @Service
 public class GameService {
 
+    private static final Map<Long, Set<Long>> roomQuizMap = new ConcurrentHashMap<>();
     private final GameRepository gameRepository;
     private final QuizRepository quizRepository;
     private final RoomRepository roomRepository;
@@ -97,21 +98,46 @@ public class GameService {
 
     @Transactional
     public ResponseQuiz sendQuiz(String roomId, RequestUserInfoAnswer userInfoAnswer) {
-        // TODO: 게임의 첫문제를 전송하는 코드 작성
-        // 문제를 제출할 때, 문제의 id와 문제 내용을 전달한
-        // 사용자는 유저의 아이디, 문제 id, 정답을 같이 전달함
-        // 서버는 문제 id를 사용하여 사용자의 답과 정답이 맞는 확인하고 전달함
         Room room = roomRepository.findById(Long.valueOf(roomId)).orElseThrow(() -> new RuntimeException("Room not found"));
-        int count = room.getQuizCount()-1;
-        room.changeQuizCount(count);
+        Quiz quiz = selectRandomQuiz(Long.parseLong(roomId), room.getTopicId());
+        int quizCount = decreaseQuizCount(room);
+
+        return new ResponseQuiz(quiz.getProblem(), quiz.getCorrectAnswer(), quiz.getDescription(), quizCount);
+    }
+    // 남은 퀴즈수 1 감소
+    private int decreaseQuizCount(Room room) {
+        room.changeQuizCount(room.getQuizCount()-1);
         roomRepository.save(room);
-        return new ResponseQuiz("prob", "correctAnswer", "discription");
+        return room.getQuizCount();
+    }
+    // topic Id 맞게 중복되지 않는 Quiz 반환
+    public Quiz selectRandomQuiz(Long roomId, Long topicId) {
+        roomQuizMap.putIfAbsent(roomId, new HashSet<>());
+        Set<Long> usedQuizIds = roomQuizMap.get(roomId);
+
+        List<Quiz> allQuizzes = quizRepository.findAllByTopicId(topicId);
+        List<Quiz> availableQuizzes = quizRepository.findAllByTopicId(topicId).stream()
+                .filter(quiz -> !usedQuizIds.contains(quiz.getQuizId()))
+                .toList();
+
+        // 사용 가능한 문제가 없으면 모든 문제를 다시 사용 가능하도록 초기화
+        if (availableQuizzes.isEmpty()) {
+            log.info("문제를 다 풀었습니다. 문제집을 초기화 합니다.");
+            usedQuizIds.clear();
+            availableQuizzes = allQuizzes;
+        }
+
+        int randomIndex = new Random().nextInt(availableQuizzes.size());
+        Quiz selectedQuiz = availableQuizzes.get(randomIndex);
+
+        usedQuizIds.add(selectedQuiz.getQuizId());
+        return selectedQuiz;
     }
     // TODO ResponseQuiz 수정
     public ResponseQuiz checkAnswer(String id, RequestAnswer requestAnswer) {
 
         Quiz quiz = quizRepository.findById(requestAnswer.quizId()).get();
 
-        return new ResponseQuiz("prob", "correctAnswer", "discription");
+        return new ResponseQuiz("prob", "correctAnswer", "description", 3);
     }
 }
