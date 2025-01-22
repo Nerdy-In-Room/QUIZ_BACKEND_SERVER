@@ -53,6 +53,7 @@
 
     <!-- Admin만 보이는 CreateQuiz 버튼: RemainQuiz 태그 "밑"에 배치 -->
     <button id="createQuizBtn"
+            class = "create-quiz-btn"
             th:if="${responseQuiz.role() == T(com.example.quiz.enums.Role).ADMIN}">
         Create Quiz
     </button>
@@ -69,7 +70,8 @@
     <!-- 사용자 정답 입력 폼 -->
     <div>
         <input type="text" id="answerInput" placeholder="Write your answer here" />
-        <button id="answerBtn">Submit</button>
+        <button id="answerBtn"
+                class ="submit-btn">Submit</button>
     </div>
 
     <!-- 정답 정보 표시 -->

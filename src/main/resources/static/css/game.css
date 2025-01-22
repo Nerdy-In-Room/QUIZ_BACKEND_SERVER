@@ -13,6 +13,39 @@ th {
     background-color: #f2f2f2;
     text-align: center;
 }
+
+/* 빨간색 Start 버튼 */
+.start-btn {
+    background-color: #e74c3c; /* 붉은색 계열 */
+    color: #fff;              /* 글자색은 흰색 */
+    border: none;            /* 테두리 제거 */
+    padding: 10px 20px;      /* 버튼 패딩 */
+    border-radius: 4px;      /* 모서리 둥글게 */
+    cursor: pointer;         /* 커서 모양: 포인터 */
+    font-weight: bold;       /* 글자 두껍게 */
+    transition: background-color 0.2s; /* 마우스오버 시 부드러운 변환 */
+}
+
+.start-btn:hover {
+    background-color: #c0392b; /* 마우스오버 시 좀 더 짙은 붉은색 */
+}
+
+/* 초록색 Ready 버튼 */
+.ready-btn {
+    background-color: #2ecc71; /* 초록색 계열 */
+    color: #fff;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: background-color 0.2s;
+}
+
+.ready-btn:hover {
+    background-color: #27ae60; /* 마우스오버 시 좀 더 짙은 초록색 */
+}
+
 .ready-true {
     color: green;
     font-weight: bold;
@@ -24,24 +57,39 @@ th {
 .admin {
     background-color: #ffd700;
 }
-.start-btn, .ready-btn {
-    padding: 5px 10px;
-    margin: 2px;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
+
+.toast {
+    position: fixed;
+    top: 20%;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: #444;
+    color: #fff;
+    padding: 20px 40px; /* 크기를 더 키움 */
+    font-size: 18px; /* 글자 크기 증가 */
+    text-align: center;
+    border-radius: 8px; /* 모서리 둥글게 */
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+    animation: fadeInOut 4s ease-in-out forwards;
+    opacity: 0;
+    z-index: 9999; /* 다른 요소 위에 표시되도록 */
 }
-.start-btn {
-    background-color: #4CAF50; /* Green */
-    color: white;
-}
-.ready-btn {
-    background-color: #008CBA; /* Blue */
-    color: white;
-}
-.start-btn:hover {
-    background-color: #45a049;
-}
-.ready-btn:hover {
-    background-color: #007bb5;
+
+@keyframes fadeInOut {
+    0% {
+        opacity: 0;
+        transform: translate(-50%, -20%);
+    }
+    10% {
+        opacity: 1;
+        transform: translate(-50%, 0);
+    }
+    90% {
+        opacity: 1;
+        transform: translate(-50%, 0);
+    }
+    100% {
+        opacity: 0;
+        transform: translate(-50%, -20%);
+    }
 }

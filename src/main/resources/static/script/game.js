@@ -20,6 +20,8 @@ let stompClient;
 let subscription;
 let allReady;
 let nextURL = null;
+let remainQuizInitialized = false; // 초기화 여부
+let remainQuizValue = 0;
 
 let reconnectAttempts = 0;
 const BASE_DELAY = 1000;
@@ -34,11 +36,23 @@ function connect() {
     const roomId = window.location.pathname.split('/')[2];
 
     stompClient.connect({"heart-beat": "10000,10000"}, function (frame) {
-        stompClient.debug = function (str) {
-        };
-
         const startButton = document.getElementById("start-btn");
         const readyButton = document.getElementById("ready-btn");
+        const remainQuizElem = document.getElementById("remainQuiz");
+        const remainQuizGameElem = document.getElementById("count");
+        const storedValue = sessionStorage.getItem("remainQuizValue");
+
+        if (storedValue !== null) {
+            remainQuizValue = Number(storedValue);
+            console.log("Loaded remainQuizValue from session:", remainQuizValue);
+        } else {
+            // sessionStorage에 없으면 DOM에서 읽고 저장
+            remainQuizValue = Number(remainQuizElem.textContent.trim()) || 0;
+            sessionStorage.setItem("remainQuizValue", remainQuizValue);
+        }
+
+        remainQuizElem.textContent = remainQuizValue;
+        remainQuizGameElem.textContent = remainQuizValue;
 
         if (startButton === null) {
             readyButton.addEventListener("click", () => {
@@ -64,7 +78,7 @@ function connect() {
             } else if (parseData.hasOwnProperty("userId") && parseData.hasOwnProperty("readyStatus")) {
                 handleServerMessage(parseData);
             }
-            else if (parseData.hasOwnProperty("gameStarted") && parseData.gameStarted === true) {
+            else if (parseData.hasOwnProperty("remainQuiz")) {
                 window.location.href = `/quiz/${roomId}`;
             }
         });
@@ -85,17 +99,25 @@ function disconnect() {
     }
 }
 
+// remainQuizValue가 변경될 때마다 sessionStorage에 저장
+function updateRemainQuizValue(newValue) {
+    remainQuizValue = newValue;
+    sessionStorage.setItem("remainQuizValue", newValue);
+}
+
 function setupReadyButton(roomId, ready) {
     const userId = ready.getAttribute("data-user-id");
-    stompClient.send(`/room/${roomId}/ready`, {}, JSON.stringify({userId: userId}));
+    stompClient.send(`/room/${roomId}/ready`, {}, JSON.stringify({
+        userId: userId
+    }));
 }
 
 function setupStartButton(roomId) {
     if (!allReady) {
-        alert("사용자들이 모두 준비가 완료되지 않았습니다.");
+        showToast(`사용자들이 모두 준비가 완료되지 않았습니다.`);
     } else {
         stompClient.send(`/room/${roomId}/start`, {}, JSON.stringify({
-            "roomId" : roomId
+            remainQuiz : remainQuizValue
         }));
     }
 }
@@ -185,4 +207,21 @@ function scheduleReconnect() {
     setTimeout(() => {
         connect();
     }, delay);
+}
+
+function showToast(message, duration = 2000) {
+    const toastContainer = document.getElementById("toast-container");
+
+    // Toast 메시지 생성
+    const toast = document.createElement("div");
+    toast.className = "toast";
+    toast.innerText = message;
+
+    // 컨테이너에 추가
+    toastContainer.appendChild(toast);
+
+    // 지정된 시간 후에 삭제
+    setTimeout(() => {
+        toast.remove();
+    }, duration);
 }

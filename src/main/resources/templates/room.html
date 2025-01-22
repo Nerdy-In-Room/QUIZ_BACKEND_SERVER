@@ -14,14 +14,18 @@
 <p><strong>Room Name: </strong><span th:text="${roomInfo.roomName}"></span></p>
 <p><strong>Topic ID: </strong><span th:text="${roomInfo.topicId}"></span></p>
 <p><strong>Max People: </strong><span th:text="${roomInfo.maxPeople}"></span></p>
-<p><strong>Quiz Count: </strong><span th:text="${roomInfo.quizCount}"></span></p>
+<p><strong>Quiz Count: </strong><span id = "count" th:text="${roomInfo.quizCount}"></span></p>
 
 <!-- 숨겨진 요소에 roomId 및 isAdmin 저장 -->
 <div id="roomId" th:text="${roomInfo.roomId}" style="display:none;"></div>
 <div id="isAdmin" th:text="${roomInfo.role}" style="display:none;"></div>
+<div id="remainQuiz" th:text="${roomInfo.quizCount}" style="display:none;"></div>
+
+<div id="toast-container" style="position: fixed; top: 10px; right: 10px; z-index: 1000;"></div>
 
 <!-- 단일 Ready 버튼 추가: "내" Ready 상태만 토글 -->
 <button id="ready-btn"
+        class="ready-btn"
         th:if="${roomInfo.role() == T(com.example.quiz.enums.Role).USER}"
         th:attr="data-user-id=${roomInfo.inGameUser().id}">
     Ready Game
@@ -29,6 +33,7 @@
 
 <!-- 방장(Admin)만 Start Game 버튼 등 필요시 추가 -->
 <button id="start-btn"
+        class="start-btn"
         th:if="${roomInfo.role() == T(com.example.quiz.enums.Role).ADMIN}"
         th:attr="data-user-id=${roomInfo.inGameUser().id}">
     Start Game

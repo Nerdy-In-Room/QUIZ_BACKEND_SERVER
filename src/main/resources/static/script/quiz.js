@@ -30,6 +30,7 @@ function initPage() {
 
     const answerBtn = document.getElementById("answerBtn");
     if(answerBtn) {
+        answerBtn.disabled = true;
         answerBtn.addEventListener("click", () => {
             checkQuizEvent()
         })
@@ -74,8 +75,12 @@ function sendCreateQuizEvent() {
 
     // Admin에서 버튼을 비활성화
     const createQuizBtn = document.getElementById("createQuizBtn");
+    const answerBtn = document.getElementById("answerBtn");
     if (createQuizBtn) {
         createQuizBtn.disabled = true;
+    }
+    if(answerBtn) {
+        answerBtn.disabled = false;
     }
 }
 
@@ -121,6 +126,8 @@ function handleWinner(quizData) {
     if (createQuizBtn) {
         createQuizBtn.disabled = false;
     }
+    const answerBtn = document.getElementById("answerBtn");
+    if(answerBtn) answerBtn.disabled = true;
     // 정답자 최신화
     curQuiz = quizData;
 }
@@ -136,6 +143,12 @@ function handleFinalWinners(quizData) {
 
     const finalWinnersList = document.getElementById("finalWinnersList");
     if (!finalWinnersList) return;
+
+    const answerBtnFinal = document.getElementById("answerBtn");
+    if(answerBtnFinal) answerBtnFinal.disabled = true;
+
+    const winner = document.getElementById("winner");
+    winner.textContent = quizData.email;
 
     // 정답 & 설명 표시
     document.getElementById("correctAnswer").style.display = "block";
@@ -178,8 +191,6 @@ function handleFinalWinners(quizData) {
     setTimeout(() => {
         window.location.href = `/room/${roomId}`;
     }, 5000);
-
-    // 전원 탈락 최종우승자는 없습니다. 5초뒤에 로비로 이동합니다.
 }
 
 // 타이머 시작 함수
@@ -201,8 +212,12 @@ function startTimer() {
                 showToast("시간 종료!");
                 // Admin에서 createQuiz 버튼 활성화
                 const createQuizBtn = document.getElementById("createQuizBtn");
+                const answerBtn = document.getElementById("answerBtn");
                 if (createQuizBtn) {
                     createQuizBtn.disabled = false;
+                }
+                if(answerBtn) {
+                    answerBtn.disabled = true;
                 }
                 // 현재 문제 정답 & 설명 표시 (ans, des)
                 document.getElementById("correctAnswer").style.display = "block";
@@ -233,6 +248,11 @@ function updateQuizStatus(quizData) {
         problemElem.textContent = quizData.problem || "문제가 없습니다.";
     }
 
+    // 정답 제출 버튼 활성화
+    const answerBtn = document.getElementById("answerBtn");
+    if (answerBtn) {
+        answerBtn.disabled = false;
+    }
     // 제한 시간 갱신
     startTimer();
 }

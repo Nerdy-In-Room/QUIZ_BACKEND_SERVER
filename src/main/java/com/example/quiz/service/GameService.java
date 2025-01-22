@@ -1,9 +1,11 @@
 package com.example.quiz.service;
 
 import com.example.quiz.dto.request.RequestAnswer;
+import com.example.quiz.dto.request.RequestRemainQuiz;
 import com.example.quiz.dto.response.ResponseCheckQuiz;
-import com.example.quiz.dto.response.ResponseMessage;
+import com.example.quiz.dto.response.ResponseReadyGame;
 import com.example.quiz.dto.response.ResponseQuiz;
+import com.example.quiz.dto.response.ResponseStartGame;
 import com.example.quiz.entity.Game;
 import com.example.quiz.entity.Quiz;
 import com.example.quiz.entity.Room;
@@ -35,7 +37,7 @@ public class GameService {
     private final UserRepository userRepository;
 
     @Transactional
-    public ResponseMessage toggleReadyStatus(String roomId, Long userId) {
+    public ResponseReadyGame toggleReadyStatus(String roomId, Long userId) {
         // User, Game 조회
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
@@ -69,12 +71,12 @@ public class GameService {
         gameRepository.save(game);
     }
     // User
-    private ResponseMessage handleReadyStatus(User user, InGameUser inGameUser, Set<InGameUser> inGameUserSet) {
+    private ResponseReadyGame handleReadyStatus(User user, InGameUser inGameUser, Set<InGameUser> inGameUserSet) {
         if(isAllReady(inGameUserSet)) {
-            return new ResponseMessage(user.getId(), user.getEmail(), user.getRole(), inGameUser.isReadyStatus(), true);
+            return new ResponseReadyGame(user.getId(), user.getEmail(), user.getRole(), inGameUser.isReadyStatus(), true);
         }
         else {
-            return new ResponseMessage(user.getId(), user.getEmail(), user.getRole(), inGameUser.isReadyStatus(), false);
+            return new ResponseReadyGame(user.getId(), user.getEmail(), user.getRole(), inGameUser.isReadyStatus(), false);
         }
     }
     // User 인 사람이 모두 Ready 인지 판단
@@ -93,6 +95,15 @@ public class GameService {
 
     private boolean isUser(InGameUser inGameUser) {
         return inGameUser.getRole() == Role.USER;
+    }
+
+    // TODO Transactional 왜 붙어야하는지 조사
+    public ResponseStartGame startGame(String roomId, RequestRemainQuiz requestRemainQuiz) {
+        Room room = roomRepository.findById(Long.parseLong(roomId)).orElseThrow(() -> new RuntimeException("Room not found"));
+        room.changeQuizCount(requestRemainQuiz.remainQuiz());
+        roomRepository.save(room);
+
+        return new ResponseStartGame(room.getQuizCount());
     }
 
     @Transactional
@@ -155,7 +166,7 @@ public class GameService {
             }
         }
         else {
-            return new ResponseCheckQuiz(user.getEmail(), false, false,null, null, null);
+            return new ResponseCheckQuiz(user.getEmail(), false, false,null, quiz.getCorrectAnswer(), quiz.getDescription());
         }
     }
 

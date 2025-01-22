@@ -26,7 +26,7 @@ public class QuizController {
 
     @MessageMapping("/{id}/check")
     public void checkQuiz(@DestinationVariable String id, RequestAnswer requestAnswer){
-        ResponseCheckQuiz responseCheckQuiz= gameService.checkAnswer(id, requestAnswer);
+        ResponseCheckQuiz responseCheckQuiz = gameService.checkAnswer(id, requestAnswer);
         messagingTemplate.convertAndSend("/pub/quiz/"+id, responseCheckQuiz);
     }
 }

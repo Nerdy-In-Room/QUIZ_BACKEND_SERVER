@@ -1,8 +1,10 @@
 package com.example.quiz.controller;
 
 
+import com.example.quiz.dto.request.RequestRemainQuiz;
 import com.example.quiz.dto.request.RequestUserId;
-import com.example.quiz.dto.response.ResponseMessage;
+import com.example.quiz.dto.response.ResponseReadyGame;
+import com.example.quiz.dto.response.ResponseStartGame;
 import com.example.quiz.service.GameService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -23,16 +25,13 @@ public class GameController {
 
     @MessageMapping("/{id}/ready")
     public void ready(@DestinationVariable String id, RequestUserId requestUserId) {
-        ResponseMessage responseMessage = gameService.toggleReadyStatus(id, requestUserId.userId());
-
-        messagingTemplate.convertAndSend("/pub/room/"+id, responseMessage);
+        ResponseReadyGame responseReadyGame = gameService.toggleReadyStatus(id, requestUserId.userId());
+        messagingTemplate.convertAndSend("/pub/room/"+id, responseReadyGame);
     }
     
     @MessageMapping("/{id}/start")
-    public void start(@DestinationVariable String id) {
-        Map<String, Object> msg = new HashMap<>();
-        msg.put("gameStarted", true);
-
-        messagingTemplate.convertAndSend("/pub/room/"+id, msg);
+    public void start(@DestinationVariable String id, RequestRemainQuiz requestRemainQuiz) {
+        ResponseStartGame responseStartGame = gameService.startGame(id, requestRemainQuiz);
+        messagingTemplate.convertAndSend("/pub/room/"+id, responseStartGame);
     }
 }
