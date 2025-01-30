@@ -4,6 +4,7 @@ import com.example.quiz.model.KakaoProperties;
 import com.example.quiz.service.UserService;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -38,7 +39,7 @@ public class UserController {
         userService.kakaoCallback(code, response);
 
         HttpHeaders headers = new HttpHeaders();
-        headers.setLocation(URI.create("http://localhost/room-list"));
+        headers.setLocation(URI.create("/room-list"));
 
         return new ResponseEntity<>(headers, HttpStatus.FOUND);
     }

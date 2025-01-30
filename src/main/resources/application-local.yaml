@@ -10,9 +10,6 @@ spring:
   data:
     mongodb:
       uri: "${spring.data.mongodb.uri}"
-    redis:
-      host: "${spring.data.redis.host}"
-      port: "${spring.data.redis.port}"
   jpa:
     open-in-view: false
     hibernate:
@@ -37,7 +34,7 @@ spring:
             user-info-uri: "${kakao.user-info-uri}"
   mvc:
     pathmatch:
-      matching-strategy: "${mvc.matching-strategy}"
+      matching-strategy: PATH_PATTERN_PARSER
 
 management:
   endpoints:

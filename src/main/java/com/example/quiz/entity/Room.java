@@ -24,7 +24,7 @@ public class Room {
     private String masterEmail;
 
     public void removeStatus() {
-        this.removeStatus = true;
+        this.removeStatus = !removeStatus;
     }
 
     public void changeRoomName(String roomName) {

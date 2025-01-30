@@ -3,7 +3,6 @@ package com.example.quiz.controller;
 import com.example.quiz.config.auth.annotation.user.LoginUser;
 import com.example.quiz.dto.User.LoginUserRequest;
 import com.example.quiz.dto.response.QuizRoomEnterResponse;
-import com.example.quiz.dto.response.ResponseQuiz;
 import com.example.quiz.dto.room.request.RoomCreateRequest;
 import com.example.quiz.dto.room.request.RoomModifyRequest;
 import com.example.quiz.dto.room.response.RoomEnterResponse;

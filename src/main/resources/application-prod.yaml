@@ -3,16 +3,13 @@ server:
 
 spring:
   datasource:
-    url: "${spring.datasource.url}"
-    username: "${spring.datasource.username}"
-    password: "${spring.datasource.password}"
-    driver-class-name: "${spring.datasource.driver-class-name}"
+    url: "${spring_datasource_url}"
+    username: "${spring_datasource_username}"
+    password: "${spring_datasource_password}"
+    driver-class-name: "${spring_datasource_driver_class_name}"
   data:
     mongodb:
-      uri: "${spring.data.mongodb.uri}"
-    redis:
-      host: "${spring.data.redis.host}"
-      port: "${spring.data.redis.port}"
+      uri: "${spring_data_mongodb_uri}"
   jpa:
     open-in-view: false
     hibernate:
@@ -28,13 +25,14 @@ spring:
       client:
         registration:
           kakao:
-            client-id: "${kakao.client-id}"
-            redirect-uri: "${kakao.redirect-uri}"
-            authorization-grant-type: "${kakao.authorization-grant-type}"
+            client-id: "${kakao_client_id}"
+            redirect-uri: "${kakao_redirect_uri}"
+            authorization-grant-type: "${kakao_authorization_grant_type}"
         provider:
           kakao:
-            token-uri: "${kakao.token-uri}"
-            user-info-uri: "${kakao.user-info-uri}"
+            token-uri: "${kakao_token_uri}"
+            user-info-uri: "${kakao_user_info_uri}"
+
   mvc:
     pathmatch:
-      matching-strategy: "${mvc.matching-strategy}"
+      matching-strategy: PATH_PATTERN_PARSER

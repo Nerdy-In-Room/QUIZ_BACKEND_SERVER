@@ -1,6 +1,5 @@
 package com.example.quiz.controller;
 
-
 import com.example.quiz.dto.request.RequestRemainQuiz;
 import com.example.quiz.dto.request.RequestUserId;
 import com.example.quiz.dto.response.ResponseReadyGame;
@@ -28,7 +27,7 @@ public class GameController {
         ResponseReadyGame responseReadyGame = gameService.toggleReadyStatus(id, requestUserId.userId());
         messagingTemplate.convertAndSend("/pub/room/"+id, responseReadyGame);
     }
-    
+
     @MessageMapping("/{id}/start")
     public void start(@DestinationVariable String id, RequestRemainQuiz requestRemainQuiz) {
         ResponseStartGame responseStartGame = gameService.startGame(id, requestRemainQuiz);

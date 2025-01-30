@@ -105,6 +105,8 @@
 
             <!-- 모달 바디 - 입력 폼 -->
             <form th:action="@{/room}" method="post">
+                <input type="hidden" id="UUID" name="UUID">
+
                 <div class="modal-body">
                     <div class="form-group">
                         <label for="roomName">Room Name</label>

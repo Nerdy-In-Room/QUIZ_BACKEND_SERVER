@@ -13,6 +13,7 @@ import com.example.quiz.repository.GameRepository;
 import com.example.quiz.repository.RoomRepository;
 import com.example.quiz.repository.UserRepository;
 import com.example.quiz.vo.InGameUser;
+import com.github.benmanes.caffeine.cache.Cache;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
@@ -24,6 +25,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 @Slf4j
 @Service
@@ -36,14 +39,34 @@ public class RoomProducerService {
     private final GameRepository gameRepository;
     private final ApplicationEventPublisher eventPublisher;
 
+    private final Cache<String, RoomResponse> roomCreateCache;
     private final Map<Long, AtomicInteger> roomSubscriptionCount;
 
-    public RoomResponse createRoom(RoomCreateRequest roomRequest, LoginUserRequest loginUserRequest) throws IllegalAccessException {
-        Room savedRoom = saveRoom(roomRequest, loginUserRequest);
-        createGameWithMasterUser(savedRoom.getRoomId(), loginUserRequest);
-        initializeRoomState(savedRoom.getRoomId());
+    private final Lock lock = new ReentrantLock();
 
-        RoomResponse roomResponse = RoomMapper.INSTANCE.RoomToRoomResponse(savedRoom);
+    public RoomResponse createRoom(RoomCreateRequest roomRequest, LoginUserRequest loginUserRequest) throws IllegalAccessException {
+        RoomResponse roomResponse;
+
+        lock.lock();
+        try {
+            roomResponse = roomCreateCache.getIfPresent(roomRequest.UUID());
+
+            if (roomResponse != null) {
+                log.info("already room");
+
+                return roomResponse;
+            }
+
+            Room savedRoom = saveRoom(roomRequest, loginUserRequest);
+            createGameWithMasterUser(savedRoom.getRoomId(), loginUserRequest);
+            initializeRoomState(savedRoom.getRoomId());
+
+            roomResponse = RoomMapper.INSTANCE.RoomToRoomResponse(savedRoom);
+            roomCreateCache.put(roomRequest.UUID(), roomResponse);
+        } finally {
+            lock.unlock();
+        }
+
         publishRoomCreatedEvent(roomResponse);
 
         return roomResponse;
