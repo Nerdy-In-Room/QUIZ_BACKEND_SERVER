@@ -10,6 +10,9 @@ spring:
   data:
     mongodb:
       uri: "${spring_data_mongodb_uri}"
+    redis:
+      host: "${spring_data_redis_uri}"
+      port: 6379
   jpa:
     open-in-view: false
     hibernate:
@@ -32,7 +35,16 @@ spring:
           kakao:
             token-uri: "${kakao_token_uri}"
             user-info-uri: "${kakao_user_info_uri}"
-
   mvc:
     pathmatch:
       matching-strategy: PATH_PATTERN_PARSER
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: prometheus
+  prometheus:
+    metrics:
+      export:
+        enabled: true

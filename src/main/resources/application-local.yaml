@@ -10,6 +10,9 @@ spring:
   data:
     mongodb:
       uri: "${spring.data.mongodb.uri}"
+    redis:
+      host: 127.0.0.1
+      port: 6379
   jpa:
     open-in-view: false
     hibernate:

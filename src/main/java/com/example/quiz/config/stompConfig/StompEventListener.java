@@ -1,5 +1,6 @@
 package com.example.quiz.config.stompConfig;
 
+import com.example.quiz.config.cacheConfig.redis.RedisEventPublisher;
 import com.example.quiz.dto.User.LoginUserRequest;
 import com.example.quiz.dto.room.ChangeCurrentOccupancies;
 import com.example.quiz.dto.room.response.RoomResponse;
@@ -15,17 +16,14 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.event.EventListener;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.messaging.simp.stomp.StompHeaderAccessor;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.socket.messaging.SessionUnsubscribeEvent;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
-import java.util.concurrent.*;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 @Slf4j
@@ -39,20 +37,15 @@ public class StompEventListener {
     private final SimpMessagingTemplate messagingTemplate;
     private final StompHeaderAccessorWrapper headerAccessorService;
 
-    private final int MAX_QUEUE_SIZE = 10;
-
-    private ScheduledFuture<?> scheduledFuture;
     private final Map<Long, Long> alreadyInGameUser;
+    private final RedisEventPublisher redisEventPublisher;
     private final Map<Long, AtomicInteger> roomSubscriptionCount;
-    private final AtomicBoolean isProcessing = new AtomicBoolean(false);
-    private final ScheduledExecutorService scheduledExecutorService = Executors.newSingleThreadScheduledExecutor();
-    private final BlockingQueue<ChangeCurrentOccupancies> changeCurrentOccupanciesQueue = new ArrayBlockingQueue<>(MAX_QUEUE_SIZE * 2);
+    private final RedisTemplate<Long, Integer> roomOccupancyCacheTemplate;
 
     @EventListener
     @Transactional
     public void handleSessionUnsubscribeEvent(SessionUnsubscribeEvent event) throws IllegalAccessException {
         LoginUserRequest loginUserRequest = extractLoginUser(event);
-        System.out.println(event.getSource());
 
         Long roomId = removeUserFromRoomMapping(loginUserRequest.userId());
         Game game = findGameByRoomId(roomId);
@@ -66,45 +59,8 @@ public class StompEventListener {
         messagingTemplate.convertAndSend("/pub/occupancy", response);
     }
 
-    @EventListener
-    public void broadcastCurrentOccupancy(ChangeCurrentOccupancies roomInfo) throws InterruptedException {
-        changeCurrentOccupanciesQueue.remove(roomInfo);
-        changeCurrentOccupanciesQueue.put(roomInfo);
-
-        processQueueIfNeeded();
-    }
-
-    private void processQueueIfNeeded() {
-        if (isProcessing.compareAndSet(false, true)) {
-            scheduledFuture = scheduledExecutorService.scheduleWithFixedDelay(() -> {
-                try {
-                    broadcastOccupancy();
-
-                    if (changeCurrentOccupanciesQueue.isEmpty()) {
-                        scheduledFuture.cancel(false);
-                        scheduledFuture = null;
-                        isProcessing.set(false);
-                    }
-                } catch (Exception e) {
-                    log.error("Error during occupancy broadcasting", e);
-                }
-            }, 1, 1, TimeUnit.SECONDS);
-        }
-    }
-
-    private void broadcastOccupancy() {
-        List<ChangeCurrentOccupancies> batchList = new ArrayList<>();
-        changeCurrentOccupanciesQueue.drainTo(batchList);
-
-        messagingTemplate.convertAndSend("/pub/occupancy", batchList);
-    }
-
     private LoginUserRequest extractLoginUser(SessionUnsubscribeEvent event) throws IllegalAccessException {
         StompHeaderAccessor accessor = headerAccessorService.wrap(event);
-        log.info("message : {}", event.getMessage());
-        log.info("hearer: {}", event.getMessage().getHeaders());
-        log.info("payload: {}", event.getMessage().getPayload());
-        log.info("host: {}", accessor.getHost());
         LoginUserRequest loginUserRequest = (LoginUserRequest) accessor.getSessionAttributes().get("loginUser");
 
         if (loginUserRequest == null) {
@@ -148,20 +104,23 @@ public class StompEventListener {
                 throw new RuntimeException("Room capacity cannot be negative for roomId: " + roomId);
             }
 
+            roomOccupancyCacheTemplate.opsForValue().decrement(roomId);
+
             return current - 1;
         });
-
-        publisher.publishEvent(new ChangeCurrentOccupancies(roomId, currentCount));
 
         if (currentCount <= 0) {
             cleanUpEmptyRoom(roomId);
         }
+
+        redisEventPublisher.publishChangeCurrentOccupancies("change-occupancies-channel", new ChangeCurrentOccupancies(roomId, currentCount));
     }
 
     private void cleanUpEmptyRoom(Long roomId) {
         roomSubscriptionCount.remove(roomId);
         roomRepository.findById(roomId).ifPresent(Room::removeStatus);
         gameRepository.removeById(String.valueOf(roomId));
+        roomOccupancyCacheTemplate.delete(roomId);
     }
 
     private InGameUser findUser(long userId, long roomId) throws IllegalAccessException {

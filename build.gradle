@@ -5,7 +5,7 @@ plugins {
 }
 
 group = 'dev.nerd'
-version = 'quiz_v1'
+version = 'quiz-v1'
 
 java {
     sourceCompatibility = '17'
@@ -46,6 +46,10 @@ dependencies {
 
     // Caffeine Cache
     implementation 'com.github.ben-manes.caffeine:caffeine:3.1.8'
+
+    // Redis
+    implementation 'org.redisson:redisson-spring-boot-starter:3.44.0'
+    implementation 'org.springframework.boot:spring-boot-starter-data-redis'
 
     //spring security
     implementation "org.springframework.boot:spring-boot-starter-security"

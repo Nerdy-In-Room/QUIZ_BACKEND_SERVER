@@ -1,11 +1,13 @@
 package com.example.quiz.service;
 
+import com.example.quiz.config.cacheConfig.redis.RedisEventPublisher;
 import com.example.quiz.dto.User.LoginUserRequest;
 import com.example.quiz.dto.response.QuizRoomEnterResponse;
 import com.example.quiz.dto.room.ChangeCurrentOccupancies;
 import com.example.quiz.dto.room.request.RoomModifyRequest;
 import com.example.quiz.dto.room.response.RoomEnterResponse;
 import com.example.quiz.dto.room.response.RoomModifyResponse;
+import com.example.quiz.dto.room.response.RoomResponse;
 import com.example.quiz.entity.Game;
 import com.example.quiz.entity.Room;
 import com.example.quiz.entity.User;
@@ -17,7 +19,9 @@ import com.example.quiz.repository.UserRepository;
 import com.example.quiz.vo.InGameUser;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.redisson.api.RedissonClient;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -36,7 +40,9 @@ public class RoomService {
     private final SimpMessagingTemplate simpMessagingTemplate;
 
     private final Map<Long, Long> alreadyInGameUser;
+    private final RedisEventPublisher redisEventPublisher;
     private final Map<Long, AtomicInteger> roomSubscriptionCount;
+    private final RedisTemplate<Long, Integer> roomOccupancyCacheTemplate;
 
     public RoomEnterResponse enterRoom(long roomId, LoginUserRequest loginUserRequest) throws IllegalAccessException {
         validateLoginUser(loginUserRequest);
@@ -48,6 +54,10 @@ public class RoomService {
 
         if (isUserAlreadyInGame(roomId, loginUserRequest.userId())) {
             return RoomMapper.INSTANCE.RoomToRoomEnterResponse(room, inGameUser, game.getGameUser());
+        }
+
+        if (room.getMasterEmail().equals(loginUserRequest.email())) {
+            publishRoomCreatedEvent(RoomMapper.INSTANCE.RoomToRoomResponse(room));
         }
 
         int currentCount = incrementSubscriptionCount(roomId, loginUserRequest.userId());
@@ -64,8 +74,6 @@ public class RoomService {
 
         InGameUser inGameUser = findUser(roomId, loginUserRequest);
 
-        log.info("user is {}", inGameUser.getId());
-        log.info("user role is {}", inGameUser.getRole());
         return RoomMapper.INSTANCE.RoomToQuizRoomEnterResponse(inGameUser, user, room);
     }
 
@@ -90,11 +98,20 @@ public class RoomService {
     }
 
     private int incrementSubscriptionCount(Long roomId, Long userId) {
+        if (!roomSubscriptionCount.containsKey(roomId)) {
+            roomSubscriptionCount.put(roomId, new AtomicInteger(1));
+            roomOccupancyCacheTemplate.opsForValue().set(roomId, 1);
+            alreadyInGameUser.put(userId, roomId);
+
+            return 1;
+        }
+
         return roomSubscriptionCount.get(roomId).updateAndGet(c -> {
             if (c >= 8) {
                 throw new RuntimeException("Room capacity reached : " + roomId);
             }
 
+            roomOccupancyCacheTemplate.opsForValue().increment(roomId);
             alreadyInGameUser.put(userId, roomId);
 
             return c + 1;
@@ -138,6 +155,10 @@ public class RoomService {
         game.changeCurrentParticipantsNo(game.getGameUser().size());
         gameRepository.save(game);
 
-        publisher.publishEvent(new ChangeCurrentOccupancies(roomId, currentCount));
+        redisEventPublisher.publishChangeCurrentOccupancies("change-occupancies-channel", new ChangeCurrentOccupancies(roomId, currentCount));
+    }
+
+    private void publishRoomCreatedEvent(RoomResponse roomResponse) {
+        publisher.publishEvent(roomResponse);
     }
 }

@@ -19,6 +19,7 @@ public class Game {
     @Id
     @Column(nullable = false)
     private String id;
+    private Long roomId;
     private Integer currentParticipantsNo;
     private Boolean isGaming;
     @Field("gameUser")

@@ -16,14 +16,18 @@ import com.example.quiz.vo.InGameUser;
 import com.github.benmanes.caffeine.cache.Cache;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.redisson.api.RLock;
+import org.redisson.api.RedissonClient;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.*;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -37,37 +41,37 @@ public class RoomProducerService {
     private final UserRepository userRepository;
     private final RoomRepository roomRepository;
     private final GameRepository gameRepository;
-    private final ApplicationEventPublisher eventPublisher;
 
-    private final Cache<String, RoomResponse> roomCreateCache;
-    private final Map<Long, AtomicInteger> roomSubscriptionCount;
-
-    private final Lock lock = new ReentrantLock();
+    private final RedissonClient redissonClient;
+    private final RedisTemplate<Long, Integer> roomOccupancyCacheTemplate;
+    private final RedisTemplate<String, RoomResponse> roomCreateCacheTemplate;
 
     public RoomResponse createRoom(RoomCreateRequest roomRequest, LoginUserRequest loginUserRequest) throws IllegalAccessException {
-        RoomResponse roomResponse;
+        RoomResponse roomResponse = null;
+        String lockKey = "room:create:" + roomRequest.UUID();
 
-        lock.lock();
+        RLock lock = redissonClient.getLock(lockKey);
         try {
-            roomResponse = roomCreateCache.getIfPresent(roomRequest.UUID());
+            if (lock.tryLock(5, 10, TimeUnit.SECONDS)) {
+                roomResponse = roomCreateCacheTemplate.opsForValue().get(roomRequest.UUID());
 
-            if (roomResponse != null) {
-                log.info("already room");
+                if (roomResponse != null) {
 
-                return roomResponse;
+                    return roomResponse;
+                }
+
+                Room savedRoom = saveRoom(roomRequest, loginUserRequest);
+                createGameWithMasterUser(savedRoom.getRoomId(), loginUserRequest);
+
+                roomResponse = RoomMapper.INSTANCE.RoomToRoomResponse(savedRoom);
+                roomCreateCacheTemplate.opsForValue().set(roomRequest.UUID(), roomResponse, 1, TimeUnit.MINUTES);
             }
-
-            Room savedRoom = saveRoom(roomRequest, loginUserRequest);
-            createGameWithMasterUser(savedRoom.getRoomId(), loginUserRequest);
-            initializeRoomState(savedRoom.getRoomId());
-
-            roomResponse = RoomMapper.INSTANCE.RoomToRoomResponse(savedRoom);
-            roomCreateCache.put(roomRequest.UUID(), roomResponse);
+        } catch (InterruptedException e) {
+            log.error("Lock acquisition interrupted: {}", e.getMessage());
+            Thread.currentThread().interrupt();
         } finally {
             lock.unlock();
         }
-
-        publishRoomCreatedEvent(roomResponse);
 
         return roomResponse;
     }
@@ -90,8 +94,7 @@ public class RoomProducerService {
         return roomRepository.findAllByRemoveStatus(false, pageable)
                 .stream()
                 .map(room -> {
-                    AtomicInteger count = roomSubscriptionCount.get(room.getRoomId());
-                    Integer currentPeople = (count != null) ? count.get() : null;
+                    Integer currentPeople = roomOccupancyCacheTemplate.opsForValue().get(room.getRoomId());
 
                     return currentPeople != null
                             ? RoomMapper.INSTANCE.RoomToRoomListResponse(room, currentPeople)
@@ -109,16 +112,8 @@ public class RoomProducerService {
 
     private void createGameWithMasterUser(Long roomId, LoginUserRequest loginUserRequest) throws IllegalAccessException {
         InGameUser masterUser = findUser(roomId, loginUserRequest);
-        Game game = new Game(String.valueOf(roomId), 1, false, new HashSet<>());
+        Game game = new Game(String.valueOf(roomId), roomId, 1, false, new HashSet<>());
         game.getGameUser().add(masterUser);
         gameRepository.save(game);
-    }
-
-    private void initializeRoomState(Long roomId) {
-        roomSubscriptionCount.put(roomId, new AtomicInteger(0));
-    }
-
-    private void publishRoomCreatedEvent(RoomResponse roomResponse) {
-        eventPublisher.publishEvent(roomResponse);
     }
 }

@@ -25,15 +25,12 @@ window.addEventListener("load", function () {
                             let roomRow = document.getElementById('room-' + room.roomId);
                             if (roomRow) {
                                 roomRow.remove();
-
                                 let tableBody = document.getElementById('room-table-body');
 
                                 if (tableBody.children.length === 0 && !emptyMessageRow) {
                                     let newEmptyMessageRow = document.createElement('tr');
                                     newEmptyMessageRow.id = 'empty-message';
-                                    newEmptyMessageRow.innerHTML = `
-                            <td colspan="7" style="text-align: center;">현재 생성된 방이 없습니다.</td>
-                        `;
+                                    newEmptyMessageRow.innerHTML = `<td colspan="7" style="text-align: center;">현재 생성된 방이 없습니다.</td>`;
                                     tableBody.appendChild(newEmptyMessageRow);
                                 }
                             }
@@ -41,7 +38,6 @@ window.addEventListener("load", function () {
                             let roomRow = document.getElementById('room-' + room.roomId);
 
                             roomRow.querySelector('.current-people').textContent = room.currentPeople;
-
                         }
                     })
                 } else {
