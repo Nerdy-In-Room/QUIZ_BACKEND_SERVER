@@ -3,7 +3,6 @@ package com.example.quiz.config.stompConfig;
 import com.example.quiz.config.cacheConfig.redis.RedisEventPublisher;
 import com.example.quiz.dto.User.LoginUserRequest;
 import com.example.quiz.dto.room.ChangeCurrentOccupancies;
-import com.example.quiz.dto.room.response.RoomResponse;
 import com.example.quiz.entity.Game;
 import com.example.quiz.entity.Room;
 import com.example.quiz.entity.User;
@@ -14,10 +13,8 @@ import com.example.quiz.repository.UserRepository;
 import com.example.quiz.vo.InGameUser;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.event.EventListener;
 import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.messaging.simp.stomp.StompHeaderAccessor;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -33,9 +30,9 @@ public class StompEventListener {
     private final UserRepository userRepository;
     private final GameRepository gameRepository;
     private final RoomRepository roomRepository;
-    private final ApplicationEventPublisher publisher;
-    private final SimpMessagingTemplate messagingTemplate;
     private final StompHeaderAccessorWrapper headerAccessorService;
+
+    private final String REDIS_PUBLISH_CHANNEL = "change-roomList-channel";
 
     private final Map<Long, Long> alreadyInGameUser;
     private final RedisEventPublisher redisEventPublisher;
@@ -52,11 +49,6 @@ public class StompEventListener {
 
         removeUserFromGame(game, loginUserRequest.userId(), roomId);
         updateRoomSubscriptionCount(roomId);
-    }
-
-    @EventListener
-    public void createNewRoomEvent(RoomResponse response) {
-        messagingTemplate.convertAndSend("/pub/occupancy", response);
     }
 
     private LoginUserRequest extractLoginUser(SessionUnsubscribeEvent event) throws IllegalAccessException {
@@ -113,7 +105,7 @@ public class StompEventListener {
             cleanUpEmptyRoom(roomId);
         }
 
-        redisEventPublisher.publishChangeCurrentOccupancies("change-occupancies-channel", new ChangeCurrentOccupancies(roomId, currentCount));
+        redisEventPublisher.publishChangeCurrentOccupancies(REDIS_PUBLISH_CHANNEL, new ChangeCurrentOccupancies(roomId, currentCount));
     }
 
     private void cleanUpEmptyRoom(Long roomId) {

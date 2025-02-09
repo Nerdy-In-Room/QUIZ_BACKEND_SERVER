@@ -67,7 +67,6 @@ public class RoomController {
         Map<String, Object> map = new HashMap<>();
         map.put("responseQuiz", quizRoomEnterResponse);
 
-        log.info("responseQuiz={}", quizRoomEnterResponse);
         return new ModelAndView("quiz", map);
     }
 

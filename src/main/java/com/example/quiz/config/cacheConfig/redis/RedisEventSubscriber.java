@@ -1,6 +1,8 @@
 package com.example.quiz.config.cacheConfig.redis;
 
 import com.example.quiz.dto.room.ChangeCurrentOccupancies;
+import com.example.quiz.dto.room.response.RoomResponse;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -23,7 +25,12 @@ public class RedisEventSubscriber {
     private final ScheduledExecutorService scheduledExecutorService = Executors.newSingleThreadScheduledExecutor();
     private final BlockingQueue<ChangeCurrentOccupancies> changeCurrentOccupanciesQueue = new ArrayBlockingQueue<>(MAX_QUEUE_SIZE);
 
-    public void handleMessage(String message) {
+    public void createRoomEvent(String message) throws JsonProcessingException {
+        RoomResponse roomResponse = new ObjectMapper().readValue(message, RoomResponse.class);
+        messagingTemplate.convertAndSend("/pub/occupancy", roomResponse);
+    }
+
+    public void changeCurrentOccupancies(String message) {
         try {
             ChangeCurrentOccupancies event = new ObjectMapper().readValue(message, ChangeCurrentOccupancies.class);
 

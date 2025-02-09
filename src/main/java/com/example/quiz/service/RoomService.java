@@ -19,8 +19,6 @@ import com.example.quiz.repository.UserRepository;
 import com.example.quiz.vo.InGameUser;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.redisson.api.RedissonClient;
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
@@ -36,8 +34,10 @@ public class RoomService {
     private final UserRepository userRepository;
     private final RoomRepository roomRepository;
     private final GameRepository gameRepository;
-    private final ApplicationEventPublisher publisher;
     private final SimpMessagingTemplate simpMessagingTemplate;
+
+    private final String REDIS_CREATE_ROOM_CHANNEL = "create-room-channel";
+    private final String REDIS_CHANGE__ROOM_LIST_CHANNEL = "change-roomList-channel";
 
     private final Map<Long, Long> alreadyInGameUser;
     private final RedisEventPublisher redisEventPublisher;
@@ -56,16 +56,19 @@ public class RoomService {
             return RoomMapper.INSTANCE.RoomToRoomEnterResponse(room, inGameUser, game.getGameUser());
         }
 
+        RoomEnterResponse roomEnterResponse = RoomMapper.INSTANCE.RoomToRoomEnterResponse(room, inGameUser, game.getGameUser());
+        int currentCount = incrementSubscriptionCount(roomId, loginUserRequest.userId());
+
         if (room.getMasterEmail().equals(loginUserRequest.email())) {
             publishRoomCreatedEvent(RoomMapper.INSTANCE.RoomToRoomResponse(room));
-        }
 
-        int currentCount = incrementSubscriptionCount(roomId, loginUserRequest.userId());
+            return roomEnterResponse;
+        }
 
         addUserToGame(game, inGameUser, roomId, currentCount);
         simpMessagingTemplate.convertAndSend("/pub/room/" + roomId, inGameUser);
 
-        return RoomMapper.INSTANCE.RoomToRoomEnterResponse(room, inGameUser, game.getGameUser());
+        return roomEnterResponse;
     }
 
     public QuizRoomEnterResponse enterQuizRoom(long roomId, LoginUserRequest loginUserRequest) throws IllegalAccessException {
@@ -155,10 +158,10 @@ public class RoomService {
         game.changeCurrentParticipantsNo(game.getGameUser().size());
         gameRepository.save(game);
 
-        redisEventPublisher.publishChangeCurrentOccupancies("change-occupancies-channel", new ChangeCurrentOccupancies(roomId, currentCount));
+        redisEventPublisher.publishChangeCurrentOccupancies(REDIS_CHANGE__ROOM_LIST_CHANNEL, new ChangeCurrentOccupancies(roomId, currentCount));
     }
 
     private void publishRoomCreatedEvent(RoomResponse roomResponse) {
-        publisher.publishEvent(roomResponse);
+        redisEventPublisher.publishCreatEvent(REDIS_CREATE_ROOM_CHANNEL, roomResponse);
     }
 }

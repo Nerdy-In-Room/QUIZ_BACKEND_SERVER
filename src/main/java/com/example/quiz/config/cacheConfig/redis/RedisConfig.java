@@ -27,6 +27,16 @@ public class RedisConfig {
     private String redisPort;
 
     @Bean
+    public RedisTemplate<Long, RoomResponse> roomCreatePublishTemplate(RedisConnectionFactory redisConnectionFactory) {
+        RedisTemplate<Long, RoomResponse> template = new RedisTemplate<>();
+        template.setConnectionFactory(redisConnectionFactory);
+        template.setKeySerializer(new GenericToStringSerializer<>(Long.class));
+        template.setValueSerializer(new GenericJackson2JsonRedisSerializer());
+
+        return template;
+    }
+
+    @Bean
     public RedisTemplate<String, RoomResponse> roomCreateCacheTemplate(RedisConnectionFactory redisConnectionFactory) {
         RedisTemplate<String, RoomResponse> template = new RedisTemplate<>();
         template.setConnectionFactory(redisConnectionFactory);
@@ -47,7 +57,7 @@ public class RedisConfig {
     }
 
     @Bean
-    public RedisTemplate<String, ChangeCurrentOccupancies> changeCurrentOccupanciesRedisTemplate(RedisConnectionFactory redisConnectionFactory) {
+    public RedisTemplate<String, ChangeCurrentOccupancies> changeCurrentOccupanciesPublishTemplate (RedisConnectionFactory redisConnectionFactory) {
         RedisTemplate<String, ChangeCurrentOccupancies> template = new RedisTemplate<>();
         template.setConnectionFactory(redisConnectionFactory);
         template.setKeySerializer(new StringRedisSerializer());
@@ -57,25 +67,30 @@ public class RedisConfig {
     }
 
     @Bean
-    public RedisMessageListenerContainer container(RedisConnectionFactory redisConnectionFactory, MessageListenerAdapter messageListenerAdapter) {
+    public RedisMessageListenerContainer container(RedisConnectionFactory redisConnectionFactory,MessageListenerAdapter createRoomAdapter, MessageListenerAdapter changeCurrentOccupanciesAdapter) {
         RedisMessageListenerContainer container = new RedisMessageListenerContainer();
 
         container.setConnectionFactory(redisConnectionFactory);
-        container.addMessageListener(messageListenerAdapter, new PatternTopic("change-occupancies-channel"));
+        container.addMessageListener(createRoomAdapter, new PatternTopic("create-room-channel"));
+        container.addMessageListener(changeCurrentOccupanciesAdapter, new PatternTopic("change-roomList-channel"));
 
         return container;
     }
 
     @Bean
-    public MessageListenerAdapter listenerAdapter(RedisEventSubscriber subscriber) {
+    public MessageListenerAdapter createRoomAdapter(RedisEventSubscriber subscriber) {
 
-        return new MessageListenerAdapter(subscriber, "handleMessage");
+        return new MessageListenerAdapter(subscriber, "createRoomEvent");
+    }
+
+    @Bean
+    public MessageListenerAdapter changeCurrentOccupanciesAdapter(RedisEventSubscriber subscriber) {
+
+        return new MessageListenerAdapter(subscriber, "changeCurrentOccupancies");
     }
 
     @Bean
     public RedissonClient redissonClient() {
-        log.info(redisUrl);
-        log.info(redisPort);
         Config redissonConfig = new Config();
         redissonConfig.useSingleServer()
                 .setAddress("redis://" + redisUrl + ":" + redisPort);

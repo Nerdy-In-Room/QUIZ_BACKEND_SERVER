@@ -29,13 +29,16 @@ const MAX_DELAY = 30000;
 const MAX_RECONNECT_ATTEMPTS = 10;
 
 function connect() {
-    const socket = new SockJS("/game");
+    const roomId = window.location.pathname.split('/')[2];
+    const socket = new SockJS("/game" + "?roomId=" + roomId);
     stompClient = Stomp.over(socket);
 
     reconnectAttempts = 0;
-    const roomId = window.location.pathname.split('/')[2];
 
     stompClient.connect({"heart-beat": "10000,10000"}, function (frame) {
+        stompClient.debug = function (str) {
+        };
+
         const startButton = document.getElementById("start-btn");
         const readyButton = document.getElementById("ready-btn");
         const remainQuizElem = document.getElementById("remainQuiz");
@@ -44,7 +47,6 @@ function connect() {
 
         if (storedValue !== null) {
             remainQuizValue = Number(storedValue);
-            console.log("Loaded remainQuizValue from session:", remainQuizValue);
         } else {
             // sessionStorage에 없으면 DOM에서 읽고 저장
             remainQuizValue = Number(remainQuizElem.textContent.trim()) || 0;
