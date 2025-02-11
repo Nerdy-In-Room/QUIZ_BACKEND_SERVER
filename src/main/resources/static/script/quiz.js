@@ -12,11 +12,6 @@ window.onload = function () {
 };
 
 function initPage() {
-    const remainQuizElem = document.getElementById("remainQuiz");
-    if (remainQuizElem) {
-        remainQuizValue = Number(remainQuizElem.textContent.trim()) || 0;
-    }
-
     const createQuizBtn = document.getElementById("createQuizBtn");
     if (createQuizBtn) {
         createQuizBtn.addEventListener("click", () => {
@@ -50,10 +45,10 @@ function connectToQuizUpdates() {
             if (quizData.hasOwnProperty("problem")) {
                 updateQuizStatus(quizData);
                 hideAnswerAndDescription();
-            } else if (!quizData.finalResult) {
-                handleWinner(quizData);
-            } else {
+            } else if (quizData.finalResult && remainQuizValue === 1) {
                 handleFinalWinners(quizData);
+            } else {
+                handleWinner(quizData);
             }
         });
     });
@@ -77,9 +72,18 @@ function checkQuizEvent() {
     const userId = document.getElementById("userId").textContent;
     const roomId = window.location.pathname.split("/")[2];
     const userAnswer = document.getElementById("answerInput").value.trim();
+    if(remainQuizValue === 1) {
+        stompClient.send(`/room/${roomId}/check`, {}, JSON.stringify({
+            userId: userId,
+            answer: userAnswer,
+            finalQuiz : true
+        }));
+    }
+
     stompClient.send(`/room/${roomId}/check`, {}, JSON.stringify({
         userId: userId,
-        answer: userAnswer
+        answer: userAnswer,
+        finalQuiz : false
     }));
 
     document.getElementById("answerInput").value = "";
@@ -87,7 +91,6 @@ function checkQuizEvent() {
 
 function handleWinner(quizData) {
     const winnerSpan = document.getElementById("winner");
-
     if (!quizData.currentResult) {
         showToast("틀렸습니다.")
         return;
@@ -98,6 +101,7 @@ function handleWinner(quizData) {
     if (timeIntervalId) {
         clearInterval(timeIntervalId);
     }
+
     timeLeft = 0;
     const timeLeftElem = document.getElementById("timeLeft");
     if (timeLeftElem) timeLeftElem.textContent = 0;
@@ -107,7 +111,11 @@ function handleWinner(quizData) {
     document.getElementById("description").style.display = "block";
     document.getElementById("descriptionText").textContent = quizData.description;
 
-    showToast(`이번 문제의 승리자는 ${quizData.email} 님입니다!`, 3000);
+    // 마지막 문제 제외한 토스트 메시지
+    if(remainQuizValue !== 1) {
+        showToast(`이번 문제의 승리자는 \n ${quizData.email} 님입니다!`, 3000);
+    }
+
     const createQuizBtn = document.getElementById("createQuizBtn");
     if (createQuizBtn) {
         createQuizBtn.disabled = false;
@@ -119,7 +127,6 @@ function handleWinner(quizData) {
 }
 
 function handleFinalWinners(quizData) {
-
     if (timeIntervalId) {
         clearInterval(timeIntervalId);
     }
@@ -129,6 +136,9 @@ function handleFinalWinners(quizData) {
 
     const finalWinnersList = document.getElementById("finalWinnersList");
     if (!finalWinnersList) return;
+
+    const createQuizBtn = document.getElementById("createQuizBtn");
+    if (createQuizBtn) createQuizBtn.disabled = true;
 
     const answerBtnFinal = document.getElementById("answerBtn");
     if (answerBtnFinal) answerBtnFinal.disabled = true;
@@ -145,8 +155,8 @@ function handleFinalWinners(quizData) {
     finalWinnersList.innerHTML = "";
     finalWinnersList.style.display = "block";
 
-    if (remainQuizValue === 0) {
-        showToast("전원 탈락! 최종 우승자는 없습니다. 5초 뒤에 로비로 이동합니다.");
+    if (remainQuizValue === 1 && !quizData.finalWinners) {
+        showToast("전원 탈락! \n 최종 우승자는 없습니다. \n 5초 뒤에 로비로 이동합니다.");
         setTimeout(() => {
             const roomId = window.location.pathname.split("/")[2];
             window.location.href = `/room/${roomId}`;
@@ -165,7 +175,7 @@ function handleFinalWinners(quizData) {
         finalWinnersText = finalWinnersArray.join(", ");
     }
 
-    showToast(`모든 퀴즈가 끝났습니다! 최종 우승자는 ${finalWinnersText} 입니다! 축하합니다! 5초뒤에 로비로 이동합니다.`);
+    showToast(`모든 퀴즈가 끝났습니다! \n 최종 우승자는 ${finalWinnersText} 입니다! \n 축하합니다! 5초뒤에 로비로 이동합니다.`);
     const roomId = window.location.pathname.split("/")[2];
     setTimeout(() => {
         window.location.href = `/room/${roomId}`;
@@ -186,7 +196,7 @@ function startTimer() {
 
         if (timeLeft <= 0) {
             clearInterval(timeIntervalId);
-            if (remainQuizValue !== 0) {
+            if (remainQuizValue !== 1) {
                 showToast("시간 종료!");
 
                 const createQuizBtn = document.getElementById("createQuizBtn");
@@ -212,8 +222,7 @@ function startTimer() {
 function updateQuizStatus(quizData) {
     const remainQuizElem = document.getElementById("remainQuiz");
     if (remainQuizElem) {
-        remainQuizValue = quizData.quizCount;
-        remainQuizElem.textContent = remainQuizValue;
+        remainQuizValue = remainQuizElem.textContent--;
     }
 
     const problemElem = document.getElementById("problem");

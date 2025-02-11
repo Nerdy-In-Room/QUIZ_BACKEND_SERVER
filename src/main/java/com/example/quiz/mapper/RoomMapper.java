@@ -1,13 +1,12 @@
 package com.example.quiz.mapper;
 
 import com.example.quiz.dto.response.QuizRoomEnterResponse;
-import com.example.quiz.dto.response.ResponseQuiz;
 import com.example.quiz.dto.room.request.RoomCreateRequest;
 import com.example.quiz.dto.room.response.RoomEnterResponse;
 import com.example.quiz.dto.room.response.RoomListResponse;
 import com.example.quiz.dto.room.response.RoomResponse;
 import com.example.quiz.entity.Room;
-import com.example.quiz.entity.User;
+import com.example.quiz.entity.user.User;
 import com.example.quiz.vo.InGameUser;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;

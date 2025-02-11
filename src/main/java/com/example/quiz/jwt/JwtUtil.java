@@ -6,6 +6,7 @@ import com.auth0.jwt.exceptions.JWTVerificationException;
 import com.auth0.jwt.interfaces.DecodedJWT;
 import com.auth0.jwt.interfaces.JWTVerifier;
 import com.example.quiz.dto.User.LoginUserRequest;
+import com.example.quiz.enums.Role;
 import org.springframework.stereotype.Component;
 
 import java.util.Date;
@@ -17,11 +18,12 @@ public class JwtUtil {
     private static final long EXPIRATION_TIME = 1000 * 60 * 60;
     private static final long REFRESH_TOKEN_EXPIRATION_TIME = 1000 * 60 * 60 * 24 * 7;
 
-    public static String generateToken(Long userId, String email) {
+    public String generateToken(Long userId, String email, String role) {
         return JWT.create()
                 .withSubject("UserDetails")
                 .withClaim("userId", userId)
                 .withClaim("email", email)
+                .withClaim("roles", role)
                 .withIssuedAt(new Date())
                 .withExpiresAt(new Date(System.currentTimeMillis() + EXPIRATION_TIME))
                 .sign(ALGORITHM);
@@ -42,7 +44,8 @@ public class JwtUtil {
 
         Long userId = decodedJWT.getClaim("userId").asLong();
         String email = decodedJWT.getClaim("email").asString();
+        Role role = decodedJWT.getClaim("roles").as(Role.class);
 
-        return new LoginUserRequest(userId, email);
+        return new LoginUserRequest(userId, email, role.name());
     }
 }

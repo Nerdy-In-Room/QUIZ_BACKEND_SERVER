@@ -10,7 +10,7 @@ import com.example.quiz.dto.room.response.RoomModifyResponse;
 import com.example.quiz.dto.room.response.RoomResponse;
 import com.example.quiz.entity.Game;
 import com.example.quiz.entity.Room;
-import com.example.quiz.entity.User;
+import com.example.quiz.entity.user.User;
 import com.example.quiz.enums.Role;
 import com.example.quiz.mapper.RoomMapper;
 import com.example.quiz.repository.GameRepository;
@@ -56,27 +56,23 @@ public class RoomService {
             return RoomMapper.INSTANCE.RoomToRoomEnterResponse(room, inGameUser, game.getGameUser());
         }
 
-        RoomEnterResponse roomEnterResponse = RoomMapper.INSTANCE.RoomToRoomEnterResponse(room, inGameUser, game.getGameUser());
-        int currentCount = incrementSubscriptionCount(roomId, loginUserRequest.userId());
-
         if (room.getMasterEmail().equals(loginUserRequest.email())) {
             publishRoomCreatedEvent(RoomMapper.INSTANCE.RoomToRoomResponse(room));
 
-            return roomEnterResponse;
+            return RoomMapper.INSTANCE.RoomToRoomEnterResponse(room, inGameUser, game.getGameUser());
         }
 
+        int currentCount = incrementSubscriptionCount(roomId, loginUserRequest.userId());
         addUserToGame(game, inGameUser, roomId, currentCount);
         simpMessagingTemplate.convertAndSend("/pub/room/" + roomId, inGameUser);
 
-        return roomEnterResponse;
+        return RoomMapper.INSTANCE.RoomToRoomEnterResponse(room, inGameUser, game.getGameUser());
     }
 
     public QuizRoomEnterResponse enterQuizRoom(long roomId, LoginUserRequest loginUserRequest) throws IllegalAccessException {
         User user = userRepository.findById(loginUserRequest.userId()).orElseThrow(IllegalAccessException::new);
         Room room = findRoomById(roomId);
-
         InGameUser inGameUser = findUser(roomId, loginUserRequest);
-
         return RoomMapper.INSTANCE.RoomToQuizRoomEnterResponse(inGameUser, user, room);
     }
 

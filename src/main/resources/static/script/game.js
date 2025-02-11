@@ -20,8 +20,7 @@ let stompClient;
 let subscription;
 let allReady;
 let nextURL = null;
-let remainQuizInitialized = false; // 초기화 여부
-let remainQuizValue = 0;
+let remainQuizValue;
 
 let reconnectAttempts = 0;
 const BASE_DELAY = 1000;
@@ -41,20 +40,6 @@ function connect() {
 
         const startButton = document.getElementById("start-btn");
         const readyButton = document.getElementById("ready-btn");
-        const remainQuizElem = document.getElementById("remainQuiz");
-        const remainQuizGameElem = document.getElementById("count");
-        const storedValue = sessionStorage.getItem("remainQuizValue");
-
-        if (storedValue !== null) {
-            remainQuizValue = Number(storedValue);
-        } else {
-            // sessionStorage에 없으면 DOM에서 읽고 저장
-            remainQuizValue = Number(remainQuizElem.textContent.trim()) || 0;
-            sessionStorage.setItem("remainQuizValue", remainQuizValue);
-        }
-
-        remainQuizElem.textContent = remainQuizValue;
-        remainQuizGameElem.textContent = remainQuizValue;
 
         if (startButton === null) {
             readyButton.addEventListener("click", () => {
@@ -99,12 +84,6 @@ function disconnect() {
         }
         stompClient.disconnect();
     }
-}
-
-// remainQuizValue가 변경될 때마다 sessionStorage에 저장
-function updateRemainQuizValue(newValue) {
-    remainQuizValue = newValue;
-    sessionStorage.setItem("remainQuizValue", newValue);
 }
 
 function setupReadyButton(roomId, ready) {

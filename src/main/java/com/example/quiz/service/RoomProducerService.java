@@ -6,31 +6,25 @@ import com.example.quiz.dto.room.response.RoomListResponse;
 import com.example.quiz.dto.room.response.RoomResponse;
 import com.example.quiz.entity.Game;
 import com.example.quiz.entity.Room;
-import com.example.quiz.entity.User;
+import com.example.quiz.entity.user.User;
 import com.example.quiz.enums.Role;
 import com.example.quiz.mapper.RoomMapper;
 import com.example.quiz.repository.GameRepository;
 import com.example.quiz.repository.RoomRepository;
 import com.example.quiz.repository.UserRepository;
 import com.example.quiz.vo.InGameUser;
-import com.github.benmanes.caffeine.cache.Cache;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.redisson.api.RLock;
 import org.redisson.api.RedissonClient;
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.*;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
 
 @Slf4j
 @Service

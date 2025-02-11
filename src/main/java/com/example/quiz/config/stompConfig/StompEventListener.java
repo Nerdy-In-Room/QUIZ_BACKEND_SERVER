@@ -5,7 +5,7 @@ import com.example.quiz.dto.User.LoginUserRequest;
 import com.example.quiz.dto.room.ChangeCurrentOccupancies;
 import com.example.quiz.entity.Game;
 import com.example.quiz.entity.Room;
-import com.example.quiz.entity.User;
+import com.example.quiz.entity.user.User;
 import com.example.quiz.enums.Role;
 import com.example.quiz.repository.GameRepository;
 import com.example.quiz.repository.RoomRepository;

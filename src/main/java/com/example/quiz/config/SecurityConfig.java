@@ -1,8 +1,11 @@
 package com.example.quiz.config;
 
 
+import com.example.quiz.config.auth.HttpCookieOAuth2AuthorizationRequestRepository;
+import com.example.quiz.entity.user.CustomAuthenticationSuccessHandler;
 import com.example.quiz.jwt.JWTRequestFilter;
 import com.example.quiz.jwt.JwtUtil;
+import com.example.quiz.service.CustomOAuth2UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -21,16 +24,30 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 @RequiredArgsConstructor
 public class SecurityConfig {
     private final JwtUtil jwtUtil;
+    private final CustomOAuth2UserService customOAuth2UserService;
 
     @Bean
-    public SecurityFilterChain filterChain(HttpSecurity httpSecurity) throws Exception {
+    public SecurityFilterChain filterChain(HttpSecurity httpSecurity, CustomAuthenticationSuccessHandler successHandler) throws Exception {
         return httpSecurity
                 .csrf(AbstractHttpConfigurer::disable)
-                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.ALWAYS))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/room/").authenticated()
-                                .anyRequest().permitAll())
-                .addFilterBefore(new JWTRequestFilter(jwtUtil), UsernamePasswordAuthenticationFilter.class)
+                        .requestMatchers("/room/**").authenticated()
+                        .requestMatchers("/quiz/**").authenticated()
+                        .requestMatchers("/actuator/health").permitAll()
+                        .requestMatchers("/actuator/**").hasRole("ADMIN")
+                        .anyRequest().permitAll())
+                .oauth2Login(oauth2 -> oauth2
+                        .authorizationEndpoint(end -> end
+                                .authorizationRequestRepository(new HttpCookieOAuth2AuthorizationRequestRepository()))
+                        .userInfoEndpoint(userInfo -> userInfo
+                                .userService(customOAuth2UserService))
+                        .successHandler(successHandler))
+                .exceptionHandling(exception -> exception
+                        .authenticationEntryPoint(((request, response, authException) -> {
+                            response.sendRedirect("/oauth2/authorization/kakao");
+                        })))
+                .addFilterBefore(new JWTRequestFilter(), UsernamePasswordAuthenticationFilter.class)
                 .build();
     }
 

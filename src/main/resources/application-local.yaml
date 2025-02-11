@@ -29,12 +29,18 @@ spring:
         registration:
           kakao:
             client-id: "${kakao.client-id}"
+            client-secret: "${kakao.secret}"
+            client-authentication-method: client_secret_post
             redirect-uri: "${kakao.redirect-uri}"
             authorization-grant-type: "${kakao.authorization-grant-type}"
+            client-name: kakao
+            scope: "${kakao.scope}"
         provider:
           kakao:
             token-uri: "${kakao.token-uri}"
             user-info-uri: "${kakao.user-info-uri}"
+            user-name-attribute: "${kakao.attribute}"
+            authorization-uri: "${kakao.authorization-uri}"
   mvc:
     pathmatch:
       matching-strategy: PATH_PATTERN_PARSER
@@ -43,7 +49,15 @@ management:
   endpoints:
     web:
       exposure:
-        include: prometheus
+        include: "health"
+  endpoint:
+    health:
+      show-details: never
+  health:
+    redis:
+      enabled: true
+    db:
+      enabled: true
   prometheus:
     metrics:
       export:

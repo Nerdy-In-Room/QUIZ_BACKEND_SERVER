@@ -1,4 +1,4 @@
-package com.example.quiz.entity;
+package com.example.quiz.entity.user;
 
 import com.example.quiz.enums.Role;
 import jakarta.persistence.*;
