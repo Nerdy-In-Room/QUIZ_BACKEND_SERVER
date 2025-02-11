@@ -46,7 +46,7 @@ public class RoomService {
 
     public RoomEnterResponse enterRoom(long roomId, LoginUserRequest loginUserRequest) throws IllegalAccessException {
         validateLoginUser(loginUserRequest);
-        checkAlreadyInGameUser(roomId, loginUserRequest.userId());
+        checkAlreadyInGameUser(loginUserRequest.userId(), roomId);
 
         Room room = findRoomById(roomId);
         Game game = findGameByRoomId(roomId);
@@ -56,13 +56,14 @@ public class RoomService {
             return RoomMapper.INSTANCE.RoomToRoomEnterResponse(room, inGameUser, game.getGameUser());
         }
 
+        int currentCount = incrementSubscriptionCount(roomId, loginUserRequest.userId());
+
         if (room.getMasterEmail().equals(loginUserRequest.email())) {
             publishRoomCreatedEvent(RoomMapper.INSTANCE.RoomToRoomResponse(room));
 
             return RoomMapper.INSTANCE.RoomToRoomEnterResponse(room, inGameUser, game.getGameUser());
         }
 
-        int currentCount = incrementSubscriptionCount(roomId, loginUserRequest.userId());
         addUserToGame(game, inGameUser, roomId, currentCount);
         simpMessagingTemplate.convertAndSend("/pub/room/" + roomId, inGameUser);
 
