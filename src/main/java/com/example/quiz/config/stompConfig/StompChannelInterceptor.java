@@ -38,13 +38,13 @@ public class StompChannelInterceptor implements ChannelInterceptor {
     @Override
     public Message<?> preSend(Message<?> message, MessageChannel channel) {
         StompHeaderAccessor accessor = StompHeaderAccessor.wrap(message);
-        LoginUserRequest loginUserRequest = null;
-
-        try {
-            loginUserRequest = extractLoginUser(accessor);
-        } catch (IllegalAccessException e) {
-            throw new RuntimeException(e);
-        }
+//        LoginUserRequest loginUserRequest = null;
+//
+//        try {
+//            loginUserRequest = extractLoginUser(accessor);
+//        } catch (IllegalAccessException e) {
+//            throw new RuntimeException(e);
+//        }
 
         int payloadSize = 0;
         Object payload = message.getPayload();
@@ -66,7 +66,7 @@ public class StompChannelInterceptor implements ChannelInterceptor {
         }
 
         if (accessor.getSessionId() != null && accessor.getCommand() != null) {
-            log.info("Client to Server Command: {}, Payload Size: {}, login user: {}", accessor.getCommand(), payloadSize, loginUserRequest.email());
+            log.info("Client to Server Command: {}, Payload Size: {}", accessor.getCommand(), payloadSize);
             clientToServerTraffic.addAndGet(payloadSize);
         } else {
             log.info("Server to Client, Payload Size: {}", payloadSize);
@@ -76,13 +76,13 @@ public class StompChannelInterceptor implements ChannelInterceptor {
         return message;
     }
 
-    private LoginUserRequest extractLoginUser(StompHeaderAccessor event) throws IllegalAccessException {
-        LoginUserRequest loginUserRequest = (LoginUserRequest) event.getSessionAttributes().get("loginUser");
-
-        if (loginUserRequest == null) {
-            throw new IllegalAccessException("Login user is null in session attributes");
-        }
-
-        return loginUserRequest;
-    }
+//    private LoginUserRequest extractLoginUser(StompHeaderAccessor event) throws IllegalAccessException {
+//        LoginUserRequest loginUserRequest = (LoginUserRequest) event.getSessionAttributes().get("loginUser");
+//
+//        if (loginUserRequest == null) {
+//            throw new IllegalAccessException("Login user is null in session attributes");
+//        }
+//
+//        return loginUserRequest;
+//    }
 }

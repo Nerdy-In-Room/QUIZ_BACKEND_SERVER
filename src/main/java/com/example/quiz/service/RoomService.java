@@ -74,9 +74,7 @@ public class RoomService {
     public QuizRoomEnterResponse enterQuizRoom(long roomId, LoginUserRequest loginUserRequest) throws IllegalAccessException {
         User user = userRepository.findById(loginUserRequest.userId()).orElseThrow(IllegalAccessException::new);
         Room room = findRoomById(roomId);
-
         InGameUser inGameUser = findUser(roomId, loginUserRequest);
-
         return RoomMapper.INSTANCE.RoomToQuizRoomEnterResponse(inGameUser, user, room);
     }
 

@@ -110,16 +110,10 @@ public class GameService {
     public ResponseQuiz sendQuiz(String roomId) {
         Room room = roomRepository.findById(Long.valueOf(roomId)).orElseThrow(() -> new RuntimeException("Room not found"));
         Quiz quiz = selectRandomQuiz(Long.parseLong(roomId), room.getTopicId());
-        int quizCount = decreaseQuizCount(room);
 
-        return new ResponseQuiz(quiz.getProblem(), quiz.getCorrectAnswer(), quiz.getDescription(), quizCount);
+        return new ResponseQuiz(quiz.getProblem(), quiz.getCorrectAnswer(), quiz.getDescription());
     }
-    // 남은 퀴즈수 1 감소
-    private int decreaseQuizCount(Room room) {
-        room.changeQuizCount(room.getQuizCount()-1);
-        roomRepository.save(room);
-        return room.getQuizCount();
-    }
+
     // topic Id 맞게 중복되지 않는 Quiz 반환
     public Quiz selectRandomQuiz(Long roomId, Long topicId) {
         roomQuizMap.putIfAbsent(roomId, new ArrayList<>());
@@ -156,9 +150,8 @@ public class GameService {
             increaseScore(user.getId(), room.getRoomId());
             // final winner 반환
             List<String> finalWinners = findFinalWinners(room.getRoomId());
-            if(room.getQuizCount() == 0) {
-                // 모든 게임이 끝난 후 점수 삭제
-                currentInGameScore.remove(room.getRoomId());
+            if(requestAnswer.finalQuiz()) {
+                removeInGameInfo(room.getRoomId());
                 return new ResponseCheckQuiz(user.getEmail(), true, true, finalWinners, quiz.getCorrectAnswer(), quiz.getDescription());
             }
             else {
@@ -172,6 +165,11 @@ public class GameService {
 
     private boolean check(String answer, Quiz quiz) {
         return quiz.getCorrectAnswer().equals(answer);
+    }
+    // 게임이 끝난 후 인게임 정보 삭제
+    private void removeInGameInfo(Long roomId) {
+        currentInGameScore.remove(roomId);
+        roomQuizMap.remove(roomId);
     }
 
     private Long correctQuizId(List<Long> usedQuizIds) {
