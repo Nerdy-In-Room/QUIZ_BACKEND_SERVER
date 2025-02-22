@@ -19,12 +19,16 @@ import com.example.quiz.repository.UserRepository;
 import com.example.quiz.vo.InGameUser;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.redisson.api.RLock;
+import org.redisson.api.RedissonClient;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.HashSet;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 @Slf4j
@@ -36,23 +40,29 @@ public class RoomService {
     private final GameRepository gameRepository;
     private final SimpMessagingTemplate simpMessagingTemplate;
 
+    private final String LOCK_PREFIX = "LOCK:";
+    private final String ROOM_ID_PREFIX = "roomId:";
+    private final String USER_ID_PREFIX = "userId:";
     private final String REDIS_CREATE_ROOM_CHANNEL = "create-room-channel";
-    private final String REDIS_CHANGE__ROOM_LIST_CHANNEL = "change-roomList-channel";
+    private final String REDIS_CHANGE_ROOM_LIST_CHANNEL = "change-roomList-channel";
 
-    private final Map<Long, Long> alreadyInGameUser;
+    private final RedissonClient redissonClient;
     private final RedisEventPublisher redisEventPublisher;
     private final Map<Long, AtomicInteger> roomSubscriptionCount;
-    private final RedisTemplate<Long, Integer> roomOccupancyCacheTemplate;
+    private final RedisTemplate<String, Integer> roomOccupancyCacheTemplate;
+    private final RedisTemplate<String, Long> alreadyInGameUserCacheTemplate;
 
-    public RoomEnterResponse enterRoom(long roomId, LoginUserRequest loginUserRequest) throws IllegalAccessException {
+
+    public RoomEnterResponse enterRoom(long roomId, LoginUserRequest loginUserRequest, String status) throws IllegalArgumentException {
         validateLoginUser(loginUserRequest);
-        checkAlreadyInGameUser(loginUserRequest.userId(), roomId);
+        checkAlreadyInGameUserDifferentRoom(loginUserRequest.userId(), roomId);
 
         Room room = findRoomById(roomId);
         Game game = findGameByRoomId(roomId);
         InGameUser inGameUser = findUser(roomId, loginUserRequest);
 
-        if (isUserAlreadyInGame(roomId, loginUserRequest.userId())) {
+        if (isUserAlreadyInGameSameRoom(roomId, loginUserRequest.userId())) {
+
             return RoomMapper.INSTANCE.RoomToRoomEnterResponse(room, inGameUser, game.getGameUser());
         }
 
@@ -74,6 +84,7 @@ public class RoomService {
         User user = userRepository.findById(loginUserRequest.userId()).orElseThrow(IllegalAccessException::new);
         Room room = findRoomById(roomId);
         InGameUser inGameUser = findUser(roomId, loginUserRequest);
+
         return RoomMapper.INSTANCE.RoomToQuizRoomEnterResponse(inGameUser, user, room);
     }
 
@@ -86,8 +97,8 @@ public class RoomService {
         return new RoomModifyResponse(room.getRoomName(), room.getTopicId());
     }
 
-    private InGameUser findUser(long roomId, LoginUserRequest loginUserRequest) throws IllegalAccessException {
-        User user = userRepository.findById(loginUserRequest.userId()).orElseThrow(IllegalAccessException::new);
+    private InGameUser findUser(long roomId, LoginUserRequest loginUserRequest) throws IllegalArgumentException {
+        User user = userRepository.findById(loginUserRequest.userId()).orElseThrow(IllegalArgumentException::new);
         Room room = findRoomById(roomId);
 
         if (loginUserRequest.email().equals(room.getMasterEmail())) {
@@ -100,8 +111,8 @@ public class RoomService {
     private int incrementSubscriptionCount(Long roomId, Long userId) {
         if (!roomSubscriptionCount.containsKey(roomId)) {
             roomSubscriptionCount.put(roomId, new AtomicInteger(1));
-            roomOccupancyCacheTemplate.opsForValue().set(roomId, 1);
-            alreadyInGameUser.put(userId, roomId);
+            roomOccupancyCacheTemplate.opsForValue().set(ROOM_ID_PREFIX + roomId, 1);
+            alreadyInGameUserCacheTemplate.opsForValue().set(USER_ID_PREFIX + userId, roomId);
 
             return 1;
         }
@@ -111,43 +122,67 @@ public class RoomService {
                 throw new RuntimeException("Room capacity reached : " + roomId);
             }
 
-            roomOccupancyCacheTemplate.opsForValue().increment(roomId);
-            alreadyInGameUser.put(userId, roomId);
+            if (c == 0) {
+                return c;
+            }
+
+            roomOccupancyCacheTemplate.opsForValue().increment(ROOM_ID_PREFIX + roomId);
+            alreadyInGameUserCacheTemplate.opsForValue().set(USER_ID_PREFIX + userId, roomId);
 
             return c + 1;
         });
     }
 
-    private void validateLoginUser(LoginUserRequest loginUserRequest) throws IllegalAccessException {
+    private void validateLoginUser(LoginUserRequest loginUserRequest) throws IllegalArgumentException {
         if (loginUserRequest == null) {
-            throw new IllegalAccessException("Login user is null");
+            throw new IllegalArgumentException("Login user is null");
         }
     }
 
-    private void checkAlreadyInGameUser(long userId, long roomId) {
-        alreadyInGameUser.compute(userId, (key, existingValue) -> {
-            if (existingValue != null && existingValue != roomId) {
-                throw new RuntimeException("already in game user: " + userId);
-            }
+    private void checkAlreadyInGameUserDifferentRoom(long userId, long roomId) {
+        String key = LOCK_PREFIX + userId;
+        RLock lock = redissonClient.getLock(key);
+        try {
+            if (lock.tryLock(5, 10, TimeUnit.SECONDS)) {
+                Long findRoomId = alreadyInGameUserCacheTemplate.opsForValue().get(USER_ID_PREFIX + key);
 
-            return existingValue;
-        });
+                if (findRoomId != null && findRoomId != roomId) {
+                    throw new RuntimeException("already in game user another room: " + userId);
+                }
+            }
+        } catch (InterruptedException e) {
+            log.error("Lock acquisition interrupted: {}", e.getMessage());
+        } finally {
+            lock.unlock();
+        }
     }
 
     private Room findRoomById(long roomId) {
         return roomRepository.findById(roomId)
-                .orElseThrow(() -> new IllegalArgumentException("Room not found for id: " + roomId));
+                .orElse(new Room(null, null, null, null, null, null, null));
     }
 
     private Game findGameByRoomId(long roomId) {
         return gameRepository.findById(String.valueOf(roomId))
-                .orElseThrow(() -> new IllegalArgumentException("Game not found for room id: " + roomId));
+                .orElse(new Game(null, null, null, null, new HashSet<>()));
     }
 
-    private boolean isUserAlreadyInGame(long roomId, long userId) {
-        Long findRoomId = alreadyInGameUser.get(userId);
+    private boolean isUserAlreadyInGameSameRoom(long roomId, long userId) {
+        String key = LOCK_PREFIX + userId;
+        RLock lock = redissonClient.getLock(key);
+        try {
+            if (lock.tryLock(5, 10, TimeUnit.SECONDS)) {
+                Long findRoomId = alreadyInGameUserCacheTemplate.opsForValue().get(USER_ID_PREFIX + key);
 
-        return findRoomId != null && findRoomId == roomId;
+                return findRoomId != null && findRoomId == roomId;
+            }
+        } catch (InterruptedException e) {
+            log.error("Lock acquisition interrupted: {}", e.getMessage());
+        } finally {
+            lock.unlock();
+        }
+
+        return false;
     }
 
     private void addUserToGame(Game game, InGameUser inGameUser, long roomId, int currentCount) {
@@ -155,10 +190,14 @@ public class RoomService {
         game.changeCurrentParticipantsNo(game.getGameUser().size());
         gameRepository.save(game);
 
-        redisEventPublisher.publishChangeCurrentOccupancies(REDIS_CHANGE__ROOM_LIST_CHANNEL, new ChangeCurrentOccupancies(roomId, currentCount));
+        publishChangeCurrentOccupancies(roomId, currentCount);
     }
 
     private void publishRoomCreatedEvent(RoomResponse roomResponse) {
         redisEventPublisher.publishCreatEvent(REDIS_CREATE_ROOM_CHANNEL, roomResponse);
+    }
+
+    private void publishChangeCurrentOccupancies(long roomId, int currentCount) {
+        redisEventPublisher.publishChangeCurrentOccupancies(REDIS_CHANGE_ROOM_LIST_CHANNEL, new ChangeCurrentOccupancies(roomId, currentCount));
     }
 }

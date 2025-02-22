@@ -46,13 +46,15 @@ spring:
       matching-strategy: PATH_PATTERN_PARSER
 
 management:
+  server:
+    port: "${management_server_port}"
   endpoints:
     web:
       exposure:
-        include: "health"
+        include: prometheus
   endpoint:
     health:
-      show-details: never
+      show-details: always
   health:
     redis:
       enabled: true

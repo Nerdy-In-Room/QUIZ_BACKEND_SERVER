@@ -27,16 +27,6 @@ public class RedisConfig {
     private String redisPort;
 
     @Bean
-    public RedisTemplate<Long, RoomResponse> roomCreatePublishTemplate(RedisConnectionFactory redisConnectionFactory) {
-        RedisTemplate<Long, RoomResponse> template = new RedisTemplate<>();
-        template.setConnectionFactory(redisConnectionFactory);
-        template.setKeySerializer(new GenericToStringSerializer<>(Long.class));
-        template.setValueSerializer(new GenericJackson2JsonRedisSerializer());
-
-        return template;
-    }
-
-    @Bean
     public RedisTemplate<String, RoomResponse> roomCreateCacheTemplate(RedisConnectionFactory redisConnectionFactory) {
         RedisTemplate<String, RoomResponse> template = new RedisTemplate<>();
         template.setConnectionFactory(redisConnectionFactory);
@@ -47,11 +37,31 @@ public class RedisConfig {
     }
 
     @Bean
-    public RedisTemplate<Long, Integer> roomOccupancyCacheTemplate(RedisConnectionFactory redisConnectionFactory) {
-        RedisTemplate<Long, Integer> template = new RedisTemplate<>();
+    public RedisTemplate<String, Integer> roomOccupancyCacheTemplate(RedisConnectionFactory redisConnectionFactory) {
+        RedisTemplate<String, Integer> template = new RedisTemplate<>();
+        template.setConnectionFactory(redisConnectionFactory);
+        template.setKeySerializer(new StringRedisSerializer());
+        template.setValueSerializer(new GenericToStringSerializer<>(Integer.class));
+
+        return template;
+    }
+
+    @Bean
+    public RedisTemplate<String, Long> alreadyInGameUserCacheTemplate(RedisConnectionFactory redisConnectionFactory) {
+        RedisTemplate<String, Long> template = new RedisTemplate<>();
+        template.setConnectionFactory(redisConnectionFactory);
+        template.setKeySerializer(new StringRedisSerializer());
+        template.setValueSerializer(new GenericToStringSerializer<>(Long.class));
+
+        return template;
+    }
+
+    @Bean
+    public RedisTemplate<Long, RoomResponse> roomCreatePublishTemplate(RedisConnectionFactory redisConnectionFactory) {
+        RedisTemplate<Long, RoomResponse> template = new RedisTemplate<>();
         template.setConnectionFactory(redisConnectionFactory);
         template.setKeySerializer(new GenericToStringSerializer<>(Long.class));
-        template.setValueSerializer(new GenericToStringSerializer<>(Integer.class));
+        template.setValueSerializer(new GenericJackson2JsonRedisSerializer());
 
         return template;
     }
@@ -69,7 +79,6 @@ public class RedisConfig {
     @Bean
     public RedisMessageListenerContainer container(RedisConnectionFactory redisConnectionFactory,MessageListenerAdapter createRoomAdapter, MessageListenerAdapter changeCurrentOccupanciesAdapter) {
         RedisMessageListenerContainer container = new RedisMessageListenerContainer();
-
         container.setConnectionFactory(redisConnectionFactory);
         container.addMessageListener(createRoomAdapter, new PatternTopic("create-room-channel"));
         container.addMessageListener(changeCurrentOccupanciesAdapter, new PatternTopic("change-roomList-channel"));

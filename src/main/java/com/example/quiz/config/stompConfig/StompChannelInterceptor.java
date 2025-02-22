@@ -1,6 +1,5 @@
 package com.example.quiz.config.stompConfig;
 
-import com.example.quiz.dto.User.LoginUserRequest;
 import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.MeterRegistry;
 import lombok.extern.slf4j.Slf4j;
@@ -10,7 +9,6 @@ import org.springframework.messaging.MessageChannel;
 import org.springframework.messaging.simp.stomp.StompHeaderAccessor;
 import org.springframework.messaging.support.ChannelInterceptor;
 import org.springframework.stereotype.Component;
-import org.springframework.web.socket.messaging.SessionUnsubscribeEvent;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -38,14 +36,6 @@ public class StompChannelInterceptor implements ChannelInterceptor {
     @Override
     public Message<?> preSend(Message<?> message, MessageChannel channel) {
         StompHeaderAccessor accessor = StompHeaderAccessor.wrap(message);
-//        LoginUserRequest loginUserRequest = null;
-//
-//        try {
-//            loginUserRequest = extractLoginUser(accessor);
-//        } catch (IllegalAccessException e) {
-//            throw new RuntimeException(e);
-//        }
-
         int payloadSize = 0;
         Object payload = message.getPayload();
 
@@ -75,14 +65,4 @@ public class StompChannelInterceptor implements ChannelInterceptor {
 
         return message;
     }
-
-//    private LoginUserRequest extractLoginUser(StompHeaderAccessor event) throws IllegalAccessException {
-//        LoginUserRequest loginUserRequest = (LoginUserRequest) event.getSessionAttributes().get("loginUser");
-//
-//        if (loginUserRequest == null) {
-//            throw new IllegalAccessException("Login user is null in session attributes");
-//        }
-//
-//        return loginUserRequest;
-//    }
 }

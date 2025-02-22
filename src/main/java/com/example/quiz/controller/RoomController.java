@@ -35,7 +35,7 @@ public class RoomController {
     public String createRoom(RoomCreateRequest roomRequest, @LoginUser LoginUserRequest loginUserRequest) throws IllegalAccessException {
         RoomResponse roomResponse = roomProducerService.createRoom(roomRequest, loginUserRequest);
 
-        return "redirect:/room/" + roomResponse.roomId();
+        return "redirect:/room/" + roomResponse.roomId() + "?status=master";
     }
 
     @GetMapping("/room-list")
@@ -53,8 +53,14 @@ public class RoomController {
     }
 
     @GetMapping("/room/{roomId}")
-    public ModelAndView enterRoom(@PathVariable Long roomId, @LoginUser LoginUserRequest loginUserRequest) throws IllegalAccessException {
-        RoomEnterResponse roomEnterResponse = roomService.enterRoom(roomId, loginUserRequest);
+    public ModelAndView enterRoom(@PathVariable Long roomId, @LoginUser LoginUserRequest loginUserRequest
+            , @RequestParam(required = false) String status) {
+        RoomEnterResponse roomEnterResponse = roomService.enterRoom(roomId, loginUserRequest, status);
+
+        if (roomEnterResponse.participants().isEmpty()) {
+            return new ModelAndView("redirect:/room-list");
+        }
+
         Map<String, Object> map = new HashMap<>();
         map.put("roomInfo", roomEnterResponse);
 

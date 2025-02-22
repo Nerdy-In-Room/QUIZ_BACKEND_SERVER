@@ -19,7 +19,7 @@ import java.util.Map;
 
 @Component
 @RequiredArgsConstructor
-public class JwtHandshakeInterceptor implements HandshakeInterceptor {
+public class CustomHandshakeInterceptor implements HandshakeInterceptor {
 
     @Override
     public boolean beforeHandshake(ServerHttpRequest request, ServerHttpResponse response, WebSocketHandler wsHandler, Map<String, Object> attributes) throws Exception {
@@ -41,6 +41,14 @@ public class JwtHandshakeInterceptor implements HandshakeInterceptor {
             LoginUserRequest loginUser = JwtUtil.verifyToken(decodeToken);
             attributes.put("loginUser", loginUser);
         }
+
+        String query = request.getURI().getQuery();
+        if (query != null && query.contains("state")) {
+            String state = query.split("state=")[1];
+
+            attributes.put("state", state);
+        }
+
         return true;
     }
 

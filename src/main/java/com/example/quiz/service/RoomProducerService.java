@@ -30,14 +30,15 @@ import java.util.concurrent.TimeUnit;
 @Service
 @RequiredArgsConstructor
 public class RoomProducerService {
-    private static final int PAGE_SIZE = 10;
-
     private final UserRepository userRepository;
     private final RoomRepository roomRepository;
     private final GameRepository gameRepository;
 
+    private static final int PAGE_SIZE = 10;
+    private final String ROOM_ID_PREFIX = "roomId:";
+
     private final RedissonClient redissonClient;
-    private final RedisTemplate<Long, Integer> roomOccupancyCacheTemplate;
+    private final RedisTemplate<String, Integer> roomOccupancyCacheTemplate;
     private final RedisTemplate<String, RoomResponse> roomCreateCacheTemplate;
 
     public RoomResponse createRoom(RoomCreateRequest roomRequest, LoginUserRequest loginUserRequest) throws IllegalAccessException {
@@ -62,7 +63,6 @@ public class RoomProducerService {
             }
         } catch (InterruptedException e) {
             log.error("Lock acquisition interrupted: {}", e.getMessage());
-            Thread.currentThread().interrupt();
         } finally {
             lock.unlock();
         }
@@ -88,7 +88,7 @@ public class RoomProducerService {
         return roomRepository.findAllByRemoveStatus(false, pageable)
                 .stream()
                 .map(room -> {
-                    Integer currentPeople = roomOccupancyCacheTemplate.opsForValue().get(room.getRoomId());
+                    Integer currentPeople = roomOccupancyCacheTemplate.opsForValue().get(ROOM_ID_PREFIX + room.getRoomId());
 
                     return currentPeople != null
                             ? RoomMapper.INSTANCE.RoomToRoomListResponse(room, currentPeople)

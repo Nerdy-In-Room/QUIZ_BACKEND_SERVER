@@ -32,18 +32,22 @@ public class StompEventListener {
     private final RoomRepository roomRepository;
     private final StompHeaderAccessorWrapper headerAccessorService;
 
+    private final String ROOM_ID_PREFIX = "roomId:";
+    private final String USER_ID_PREFIX = "userId:";
     private final String REDIS_PUBLISH_CHANNEL = "change-roomList-channel";
 
-    private final Map<Long, Long> alreadyInGameUser;
+
     private final RedisEventPublisher redisEventPublisher;
     private final Map<Long, AtomicInteger> roomSubscriptionCount;
-    private final RedisTemplate<Long, Integer> roomOccupancyCacheTemplate;
+    private final RedisTemplate<String, Integer> roomOccupancyCacheTemplate;
+    private final RedisTemplate<String, Long> alreadyInGameUserCacheTemplate;
 
     @EventListener
     @Transactional
-    public void handleSessionUnsubscribeEvent(SessionUnsubscribeEvent event) throws IllegalAccessException {
-        LoginUserRequest loginUserRequest = extractLoginUser(event);
+    public void handleSessionUnsubscribeEvent(SessionUnsubscribeEvent event) {
+        StompHeaderAccessor accessor = headerAccessorService.wrap(event);
 
+        LoginUserRequest loginUserRequest = extractLoginUser(accessor);
         Long roomId = removeUserFromRoomMapping(loginUserRequest.userId());
         Game game = findGameByRoomId(roomId);
 
@@ -51,22 +55,27 @@ public class StompEventListener {
         updateRoomSubscriptionCount(roomId);
     }
 
-    private LoginUserRequest extractLoginUser(SessionUnsubscribeEvent event) throws IllegalAccessException {
-        StompHeaderAccessor accessor = headerAccessorService.wrap(event);
+    private LoginUserRequest extractLoginUser(StompHeaderAccessor accessor) throws IllegalArgumentException {
         LoginUserRequest loginUserRequest = (LoginUserRequest) accessor.getSessionAttributes().get("loginUser");
 
         if (loginUserRequest == null) {
-            throw new IllegalAccessException("Login user is null in session attributes");
+            throw new IllegalArgumentException("Login user is null in session attributes");
         }
 
         return loginUserRequest;
     }
 
     private Long removeUserFromRoomMapping(Long userId) {
-        Long roomId = alreadyInGameUser.remove(userId);
+        Long roomId = alreadyInGameUserCacheTemplate.opsForValue().get(USER_ID_PREFIX + userId);
 
         if (roomId == null) {
             throw new IllegalStateException("User is not associated with any game");
+        }
+
+        boolean delete = alreadyInGameUserCacheTemplate.delete(USER_ID_PREFIX + userId);
+
+        if (!delete) {
+            throw new IllegalStateException("fail delete");
         }
 
         return roomId;
@@ -77,13 +86,13 @@ public class StompEventListener {
                 .orElseThrow(() -> new IllegalStateException("Game not found for roomId: " + roomId));
     }
 
-    private void removeUserFromGame(Game game, Long userId, Long roomId) throws IllegalAccessException {
+    private void removeUserFromGame(Game game, Long userId, Long roomId) throws IllegalArgumentException {
         InGameUser inGameUser = findUser(userId, roomId);
         game.getGameUser().remove(inGameUser);
         gameRepository.save(game);
     }
 
-    private void updateRoomSubscriptionCount(Long roomId) {
+    public void updateRoomSubscriptionCount(Long roomId) {
         AtomicInteger count = roomSubscriptionCount.get(roomId);
 
         if (count == null) {
@@ -96,7 +105,7 @@ public class StompEventListener {
                 throw new RuntimeException("Room capacity cannot be negative for roomId: " + roomId);
             }
 
-            roomOccupancyCacheTemplate.opsForValue().decrement(roomId);
+            roomOccupancyCacheTemplate.opsForValue().decrement(ROOM_ID_PREFIX + roomId);
 
             return current - 1;
         });
@@ -112,11 +121,11 @@ public class StompEventListener {
         roomSubscriptionCount.remove(roomId);
         roomRepository.findById(roomId).ifPresent(Room::removeStatus);
         gameRepository.removeById(String.valueOf(roomId));
-        roomOccupancyCacheTemplate.delete(roomId);
+        roomOccupancyCacheTemplate.delete(ROOM_ID_PREFIX + roomId);
     }
 
-    private InGameUser findUser(long userId, long roomId) throws IllegalAccessException {
-        User user = userRepository.findById(userId).orElseThrow(IllegalAccessException::new);
+    private InGameUser findUser(long userId, long roomId) throws IllegalArgumentException {
+        User user = userRepository.findById(userId).orElseThrow(IllegalArgumentException::new);
 
         return new InGameUser(user.getId(), roomId, user.getEmail(), Role.USER, false);
     }

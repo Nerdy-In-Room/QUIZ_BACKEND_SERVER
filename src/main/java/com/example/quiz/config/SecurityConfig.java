@@ -4,7 +4,6 @@ package com.example.quiz.config;
 import com.example.quiz.config.auth.HttpCookieOAuth2AuthorizationRequestRepository;
 import com.example.quiz.entity.user.CustomAuthenticationSuccessHandler;
 import com.example.quiz.jwt.JWTRequestFilter;
-import com.example.quiz.jwt.JwtUtil;
 import com.example.quiz.service.CustomOAuth2UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
@@ -33,8 +32,6 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/room/**").authenticated()
                         .requestMatchers("/quiz/**").authenticated()
-                        .requestMatchers("/actuator/health").permitAll()
-                        .requestMatchers("/actuator/**").hasRole("ADMIN")
                         .anyRequest().permitAll())
                 .oauth2Login(oauth2 -> oauth2
                         .authorizationEndpoint(end -> end
