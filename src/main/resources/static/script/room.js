@@ -1,5 +1,21 @@
 window.addEventListener("load", () => {
-    connect()
+    connect();
+
+    // 뒤로가기로 이동한 경우 감지하여 room-list로 이동
+    const navigationEntries = performance.getEntriesByType("navigation");
+    if (navigationEntries.length > 0) {
+        const navigationEntry = navigationEntries[0];
+        if (navigationEntry.type === "back_forward") {
+            console.log("🔙 뒤로가기 감지됨, room-list로 이동");
+            window.location.href = "/room-list";
+        }
+    }
+});
+
+// 뒤로가기 감지하여 room-list로 이동
+window.addEventListener("popstate", () => {
+    console.log("🔙 뒤로가기 감지됨, room-list로 이동");
+    window.location.href = "/room-list";
 });
 
 window.addEventListener("beforeunload", (event) => {
