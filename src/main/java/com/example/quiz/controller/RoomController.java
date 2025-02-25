@@ -53,8 +53,9 @@ public class RoomController {
     }
 
     @GetMapping("/room/{roomId}")
-    public ModelAndView enterRoom(@PathVariable Long roomId, @LoginUser LoginUserRequest loginUserRequest
-            , @RequestParam(required = false) String status) {
+    public ModelAndView enterRoom(@PathVariable Long roomId,
+                                  @LoginUser LoginUserRequest loginUserRequest,
+                                  @RequestParam(required = false) String status) throws IllegalAccessException {
         RoomEnterResponse roomEnterResponse = roomService.enterRoom(roomId, loginUserRequest, status);
 
         if (roomEnterResponse.participants().isEmpty()) {
