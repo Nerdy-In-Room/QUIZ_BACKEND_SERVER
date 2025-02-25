@@ -9,6 +9,14 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
 
+    env:
+      EC2_SERVER_1: ${{ secrets.EC2_SERVER_1 }}
+      EC2_SERVER_2: ${{ secrets.EC2_SERVER_2 }}
+
+    strategy:
+      matrix:
+        ec2_host: [ "EC2_SERVER_1", "EC2_SERVER_2" ]
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -33,19 +41,36 @@ jobs:
       - name: Add EC2 host to known hosts
         run: |
           mkdir -p ~/.ssh
-          ssh-keyscan -p 30600 -H ${{ secrets.EC2_PUBLIC_IP }} >> ~/.ssh/known_hosts
-        env:
-          EC2_PUBLIC_IP: ${{ secrets.EC2_PUBLIC_IP }}
+          ssh-keyscan -p 30600 -H ${{ env[ matrix.ec2_host ] }} >> ~/.ssh/known_hosts
 
       - name: Set up SSH
         uses: webfactory/ssh-agent@v0.5.3
         with:
           ssh-private-key: ${{ secrets.EC2_SSH_KEY }}
 
+      - name: Stop server
+        run: |
+          ssh -p 30600 ubuntu@${{ env[ matrix.ec2_host ] }} 'sudo systemctl stop quiz'
+
       - name: Copy Jar to EC2
         run: |
-          scp -P 30600 build/libs/*.jar ubuntu@${{ secrets.EC2_PUBLIC_IP }}:~/quiz
+          scp -P 30600 build/libs/*.jar ubuntu@${{ env[ matrix.ec2_host ] }}:~/quiz
 
-      - name: Restart server
+      - name: Start server
         run: |
-          ssh -p 30600 ubuntu@${{ secrets.EC2_PUBLIC_IP }} 'sudo systemctl restart quiz'
+          ssh -p 30600 ubuntu@${{ env[ matrix.ec2_host ] }} 'sudo systemctl start quiz'
+
+          echo "Waiting for 20 seconds to allow the server to start..."
+          sleep 20
+          EOF
+
+          echo "Waiting for new service to be available..."
+          for i in {1..10}; do
+            HEALTH_STATUS=$(curl -s http://localhost:30700/actuator/health | jq -r '.status')
+            if [ "$HEALTH_STATUS" == "UP" ]; then
+              echo "New service is running and healthy!"
+              break
+            fi
+            sleep 3
+          done
+          EOF
