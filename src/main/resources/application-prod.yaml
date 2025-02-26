@@ -51,10 +51,10 @@ management:
   endpoints:
     web:
       exposure:
-        include: prometheus
+        include: prometheus, health
   endpoint:
     health:
-      show-details: always
+      show-details: never
   health:
     redis:
       enabled: true
@@ -64,3 +64,6 @@ management:
     metrics:
       export:
         enabled: true
+
+secret:
+  key: "${secret_key}"

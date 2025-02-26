@@ -30,6 +30,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.locks.ReentrantLock;
 
 @Slf4j
 @Service
@@ -39,6 +40,7 @@ public class RoomService {
     private final RoomRepository roomRepository;
     private final GameRepository gameRepository;
     private final SimpMessagingTemplate simpMessagingTemplate;
+    private final RoomLockManager roomLockManager;
 
     private final String LOCK_PREFIX = "LOCK:";
     private final String ROOM_ID_PREFIX = "roomId:";
@@ -52,32 +54,42 @@ public class RoomService {
     private final RedisTemplate<String, Integer> roomOccupancyCacheTemplate;
     private final RedisTemplate<String, Long> alreadyInGameUserCacheTemplate;
 
-
-    public RoomEnterResponse enterRoom(long roomId, LoginUserRequest loginUserRequest, String status) throws IllegalArgumentException {
+    public RoomEnterResponse enterRoom(long roomId, LoginUserRequest loginUserRequest, String status) throws IllegalArgumentException, IllegalAccessException {
         validateLoginUser(loginUserRequest);
         checkAlreadyInGameUserDifferentRoom(loginUserRequest.userId(), roomId);
 
-        Room room = findRoomById(roomId);
-        Game game = findGameByRoomId(roomId);
-        InGameUser inGameUser = findUser(roomId, loginUserRequest);
+        ReentrantLock lock = roomLockManager.getLock(roomId);
+        lock.lock();
 
-        if (isUserAlreadyInGameSameRoom(roomId, loginUserRequest.userId())) {
+        try {
+            Room room = findRoomById(roomId);
+            Game game = findGameByRoomId(roomId);
+            InGameUser inGameUser = findUser(roomId, loginUserRequest);
+            // 방 삭제 여부 확인
+            if(validateRoom(roomId)) {
+                return RoomMapper.INSTANCE.RoomToRoomEnterResponse(room, inGameUser, game.getGameUser());
+            }
+
+            if (isUserAlreadyInGameSameRoom(roomId, loginUserRequest.userId())) {
+                return RoomMapper.INSTANCE.RoomToRoomEnterResponse(room, inGameUser, game.getGameUser());
+            }
+
+            int currentCount = incrementSubscriptionCount(roomId, loginUserRequest.userId());
+
+            if (room.getMasterEmail().equals(loginUserRequest.email())) {
+                publishRoomCreatedEvent(RoomMapper.INSTANCE.RoomToRoomResponse(room));
+                addUserToGame(game, inGameUser, roomId, currentCount);
+                simpMessagingTemplate.convertAndSend("/pub/room/" + roomId, inGameUser);
+                return RoomMapper.INSTANCE.RoomToRoomEnterResponse(room, inGameUser, game.getGameUser());
+            }
+
+            addUserToGame(game, inGameUser, roomId, currentCount);
+            simpMessagingTemplate.convertAndSend("/pub/room/" + roomId, inGameUser);
 
             return RoomMapper.INSTANCE.RoomToRoomEnterResponse(room, inGameUser, game.getGameUser());
+        } finally {
+            lock.unlock();
         }
-
-        int currentCount = incrementSubscriptionCount(roomId, loginUserRequest.userId());
-
-        if (room.getMasterEmail().equals(loginUserRequest.email())) {
-            publishRoomCreatedEvent(RoomMapper.INSTANCE.RoomToRoomResponse(room));
-
-            return RoomMapper.INSTANCE.RoomToRoomEnterResponse(room, inGameUser, game.getGameUser());
-        }
-
-        addUserToGame(game, inGameUser, roomId, currentCount);
-        simpMessagingTemplate.convertAndSend("/pub/room/" + roomId, inGameUser);
-
-        return RoomMapper.INSTANCE.RoomToRoomEnterResponse(room, inGameUser, game.getGameUser());
     }
 
     public QuizRoomEnterResponse enterQuizRoom(long roomId, LoginUserRequest loginUserRequest) throws IllegalAccessException {
@@ -131,6 +143,13 @@ public class RoomService {
 
             return c + 1;
         });
+    }
+
+    private boolean validateRoom(Long roomId) {
+        Room room = roomRepository.findById(roomId)
+                .orElseThrow(() -> new IllegalArgumentException("Room not found"));
+
+        return room.getRemoveStatus();
     }
 
     private void validateLoginUser(LoginUserRequest loginUserRequest) throws IllegalArgumentException {

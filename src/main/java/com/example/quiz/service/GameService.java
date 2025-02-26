@@ -31,6 +31,7 @@ public class GameService {
 
     private static final Map<Long, List<Long>> roomQuizMap = new ConcurrentHashMap<>();
     private static final Map<Long, Map<Long, Long>> currentInGameScore = new ConcurrentHashMap<>();
+    private static final Map<Long, Integer> remainQuizMap = new ConcurrentHashMap<>();
     private final GameRepository gameRepository;
     private final QuizRepository quizRepository;
     private final RoomRepository roomRepository;
@@ -97,11 +98,11 @@ public class GameService {
         return inGameUser.getRole() == Role.USER;
     }
 
-    // TODO Transactional 왜 붙어야하는지 조사
+    @Transactional
     public ResponseStartGame startGame(String roomId, RequestRemainQuiz requestRemainQuiz) {
         Room room = roomRepository.findById(Long.parseLong(roomId)).orElseThrow(() -> new RuntimeException("Room not found"));
+        remainQuizMap.put(Long.parseLong(roomId), room.getQuizCount());
         room.changeQuizCount(requestRemainQuiz.remainQuiz());
-        roomRepository.save(room);
 
         return new ResponseStartGame(room.getQuizCount());
     }
@@ -111,7 +112,18 @@ public class GameService {
         Room room = roomRepository.findById(Long.valueOf(roomId)).orElseThrow(() -> new RuntimeException("Room not found"));
         Quiz quiz = selectRandomQuiz(Long.parseLong(roomId), room.getTopicId());
 
+        remainQuizMap.merge(Long.parseLong(roomId), 1, (oldValue, newValue) -> oldValue - 1);
+        makeGame(Long.parseLong(roomId));
+
         return new ResponseQuiz(quiz.getProblem(), quiz.getCorrectAnswer(), quiz.getDescription());
+    }
+
+    private void makeGame(Long roomId) {
+        if(remainQuizMap.get(roomId) == 0) {
+            roomRepository.findById(roomId).ifPresent(Room::removeStatus);
+            Game game = new Game(String.valueOf(roomId), roomId, 0, false, new HashSet<>());
+            gameRepository.save(game);
+        }
     }
 
     // topic Id 맞게 중복되지 않는 Quiz 반환

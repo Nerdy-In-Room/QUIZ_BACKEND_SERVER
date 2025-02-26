@@ -1,3 +1,27 @@
+window.addEventListener("load", () => {
+    connectToQuizUpdates();
+
+    // 뒤로가기 감지 시 room-list로 이동
+    const navigationEntries = performance.getEntriesByType("navigation");
+    if (navigationEntries.length > 0) {
+        const navigationEntry = navigationEntries[0];
+        if (navigationEntry.type === "back_forward") {
+            console.log("뒤로가기 감지됨, room-list로 이동");
+            window.location.href = "/room-list";
+        }
+    }
+});
+
+window.addEventListener("popstate", () => {
+    console.log("뒤로가기 감지됨, room-list로 이동");
+    window.location.href = "/room-list";
+});
+
+window.addEventListener("beforeunload", (event) => {
+    console.log("페이지 벗어남, disconnect 호출");
+    disconnect();
+});
+
 let timeLeft = 30;
 let remainQuizValue = 0;
 let timeIntervalId = null;

@@ -7,16 +7,21 @@ import com.auth0.jwt.interfaces.DecodedJWT;
 import com.auth0.jwt.interfaces.JWTVerifier;
 import com.example.quiz.dto.User.LoginUserRequest;
 import com.example.quiz.enums.Role;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.util.Date;
 
 @Component
 public class JwtUtil {
-    private static final String SECRET_KEY = "secret";
-    private static final Algorithm ALGORITHM = Algorithm.HMAC256(SECRET_KEY);
+    private static Algorithm algorithm;
     private static final long EXPIRATION_TIME = 1000 * 60 * 60;
     private static final long REFRESH_TOKEN_EXPIRATION_TIME = 1000 * 60 * 60 * 24 * 7;
+
+    @Value("${secret.key}")
+    public void setSecretKey(String key) {
+        algorithm = Algorithm.HMAC256(key);
+    }
 
     public String generateToken(Long userId, String email, String role) {
         return JWT.create()
@@ -26,7 +31,7 @@ public class JwtUtil {
                 .withClaim("roles", role)
                 .withIssuedAt(new Date())
                 .withExpiresAt(new Date(System.currentTimeMillis() + EXPIRATION_TIME))
-                .sign(ALGORITHM);
+                .sign(algorithm);
     }
 
     public static String generateRefreshToken(Long userId) {
@@ -35,11 +40,11 @@ public class JwtUtil {
                 .withClaim("userId", userId)
                 .withIssuedAt(new Date())
                 .withExpiresAt(new Date(System.currentTimeMillis() + REFRESH_TOKEN_EXPIRATION_TIME))
-                .sign(ALGORITHM);
+                .sign(algorithm);
     }
 
     public static LoginUserRequest verifyToken(String token) throws JWTVerificationException {
-        JWTVerifier verifier = JWT.require(ALGORITHM).build();
+        JWTVerifier verifier = JWT.require(algorithm).build();
         DecodedJWT decodedJWT = verifier.verify(token);
 
         Long userId = decodedJWT.getClaim("userId").asLong();

@@ -3,7 +3,6 @@ package com.example.quiz.jwt;
 
 import com.auth0.jwt.exceptions.JWTVerificationException;
 import com.example.quiz.dto.User.LoginUserRequest;
-import com.example.quiz.enums.Role;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.Cookie;
