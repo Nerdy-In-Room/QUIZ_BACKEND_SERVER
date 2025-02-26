@@ -41,7 +41,7 @@ jobs:
       - name: Add EC2 host to known hosts
         run: |
           mkdir -p ~/.ssh
-          ssh-keyscan -p 30600 -H ${{ env[ matrix.ec2_host ] }} >> ~/.ssh/known_hosts
+          ssh-keyscan -p 30600 -H ${{ secrets[matrix.ec2_host] }} >> ~/.ssh/known_hosts
 
       - name: Set up SSH
         uses: webfactory/ssh-agent@v0.5.3
@@ -50,20 +50,18 @@ jobs:
 
       - name: Stop server
         run: |
-          ssh -p 30600 ubuntu@${{ env[ matrix.ec2_host ] }} 'sudo systemctl stop quiz'
+          ssh -p 30600 ubuntu@${{ secrets[matrix.ec2_host] }} 'sudo systemctl stop quiz'
 
       - name: Copy Jar to EC2
         run: |
-          scp -P 30600 build/libs/*.jar ubuntu@${{ env[ matrix.ec2_host ] }}:~/quiz
+          scp -P 30600 build/libs/*.jar ubuntu@${{ secrets[matrix.ec2_host] }}:~/quiz
 
-      - name: Start server
+      - name: Start server and check health
         run: |
-          ssh -p 30600 ubuntu@${{ env[ matrix.ec2_host ] }} 'sudo systemctl start quiz'
-
+          ssh -p 30600 ubuntu@${{ secrets[matrix.ec2_host] }} << 'EOF'
+          sudo systemctl start quiz
           echo "Waiting for 20 seconds to allow the server to start..."
           sleep 20
-          EOF
-
           echo "Waiting for new service to be available..."
           for i in {1..10}; do
             HEALTH_STATUS=$(curl -s http://localhost:30700/actuator/health | jq -r '.status')
