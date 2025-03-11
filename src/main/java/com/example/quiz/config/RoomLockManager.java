@@ -1,4 +1,4 @@
-package com.example.quiz.service;
+package com.example.quiz.config;
 
 import org.springframework.stereotype.Component;
 

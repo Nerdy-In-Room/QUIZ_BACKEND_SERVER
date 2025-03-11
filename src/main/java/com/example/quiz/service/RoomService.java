@@ -1,5 +1,6 @@
 package com.example.quiz.service;
 
+import com.example.quiz.config.RoomLockManager;
 import com.example.quiz.config.cacheConfig.redis.RedisEventPublisher;
 import com.example.quiz.dto.User.LoginUserRequest;
 import com.example.quiz.dto.response.QuizRoomEnterResponse;
@@ -66,7 +67,7 @@ public class RoomService {
             Game game = findGameByRoomId(roomId);
             InGameUser inGameUser = findUser(roomId, loginUserRequest);
             // 방 삭제 여부 확인
-            if(validateRoom(roomId)) {
+            if (validateRoom(roomId)) {
                 return RoomMapper.INSTANCE.RoomToRoomEnterResponse(room, inGameUser, game.getGameUser());
             }
 
