@@ -2,6 +2,9 @@ package com.example.quiz.service;
 
 import com.example.quiz.dto.User.LoginUserRequest;
 import com.example.quiz.dto.room.request.RoomCreateRequest;
+import com.example.quiz.entity.user.User;
+import com.example.quiz.enums.Role;
+import com.example.quiz.repository.UserRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -41,7 +44,7 @@ class RoomServiceTest {
     @Autowired
     private RoomProducerService roomProducerService;
     @Autowired
-    private UserService userService;
+    private UserRepository userRepository;
 
     private final int TEST_THREAD = 100;
 
@@ -69,31 +72,31 @@ class RoomServiceTest {
     public void subscriptionTest() throws ExecutionException, InterruptedException, IllegalAccessException {
         AtomicLong roomNumber = new AtomicLong(1);
         AtomicLong userNumber = new AtomicLong(1);
-        AtomicInteger sessionNumber = new AtomicInteger(1);
 
-        for (int i = 0; i < 100; i++) {
-            userService.findUser("user" + i, "email" + i);
+        for (long i = 1; i <= 100; i++) {
+            userRepository.save(new User(i, "user" + i, "test@test.com", Role.USER));
         }
 
         roomSubscriptionCount.put(1L, new AtomicInteger(1));
         roomSubscriptionCount.put(2L, new AtomicInteger(1));
 
-        roomProducerService.createRoom(new RoomCreateRequest("room1", 1L, 8, 8), new LoginUserRequest(1L, "email"));
-        roomProducerService.createRoom(new RoomCreateRequest("room2", 1L, 8, 8), new LoginUserRequest(2L, "email"));
+        roomProducerService.createRoom(new RoomCreateRequest("room1", 1L, 8, 8, "1"), new LoginUserRequest(1L, "email", "USER"));
+        roomProducerService.createRoom(new RoomCreateRequest("room2", 1L, 8, 8, "2"), new LoginUserRequest(2L, "email", "USER"));
 
         List<CompletableFuture<Void>> list = new ArrayList<>();
 
-        CyclicBarrier barrier = new CyclicBarrier(98);
+        CyclicBarrier barrier = new CyclicBarrier(100);
 
-        for (long i = 3; i <= TEST_THREAD; i++) {
+        for (long i = 1; i <= TEST_THREAD; i++) {
+            long now = userNumber.getAndIncrement();
             list.add(CompletableFuture.runAsync(
                     () -> {
                         try {
                             barrier.await();
 
-                            roomService.enterRoom(roomNumber.getAndIncrement() % 2 + 1, new LoginUserRequest(userNumber.getAndIncrement(), "email"));
+                            roomService.enterRoom(roomNumber.getAndIncrement() % 2 + 1, new LoginUserRequest(now, "email", "USER"), "");
                         } catch (RuntimeException | IllegalAccessException e) {
-                            log.info("user: {}", e.getMessage());
+                            log.info("user: {}, {}", now, e.getMessage());
                         } catch (BrokenBarrierException | InterruptedException e) {
                             throw new RuntimeException(e);
                         }
@@ -103,7 +106,7 @@ class RoomServiceTest {
 
         CompletableFuture.allOf(list.toArray(new CompletableFuture[0])).get();
 
-        Assertions.assertEquals(15, roomSubscriptionCount.get(1L).get());
-        Assertions.assertEquals(15, roomSubscriptionCount.get(2L).get());
+        Assertions.assertEquals(8, roomSubscriptionCount.get(1L).get());
+        Assertions.assertEquals(8, roomSubscriptionCount.get(2L).get());
     }
 }
