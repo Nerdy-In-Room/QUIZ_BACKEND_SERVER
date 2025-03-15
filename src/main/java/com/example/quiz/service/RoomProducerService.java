@@ -64,7 +64,9 @@ public class RoomProducerService {
         } catch (InterruptedException e) {
             log.error("Lock acquisition interrupted: {}", e.getMessage());
         } finally {
-            lock.unlock();
+            if (lock != null && lock.isHeldByCurrentThread()) {
+                lock.unlock();
+            }
         }
 
         return roomResponse;
@@ -79,7 +81,7 @@ public class RoomProducerService {
     }
 
     private InGameUser findUser(long roomId, LoginUserRequest loginUserRequest) throws IllegalAccessException {
-        User user = userRepository.findById(loginUserRequest.userId()).orElseThrow(IllegalAccessException::new);
+        User user = userRepository.findById(loginUserRequest.userId()).orElseThrow();
 
         return new InGameUser(user.getId(), roomId, user.getEmail(), Role.ADMIN, false);
     }
