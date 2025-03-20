@@ -7,6 +7,10 @@ import com.example.quiz.entity.Game;
 import com.example.quiz.entity.Room;
 import com.example.quiz.entity.user.User;
 import com.example.quiz.enums.Role;
+import com.example.quiz.exception.game.GameErrorCode;
+import com.example.quiz.exception.game.GameErrorException;
+import com.example.quiz.exception.general.GeneralErrorCode;
+import com.example.quiz.exception.general.GeneralErrorException;
 import com.example.quiz.repository.GameRepository;
 import com.example.quiz.repository.RoomRepository;
 import com.example.quiz.repository.UserRepository;
@@ -55,11 +59,11 @@ public class StompEventListener {
         updateRoomSubscriptionCount(roomId);
     }
 
-    private LoginUserRequest extractLoginUser(StompHeaderAccessor accessor) throws IllegalArgumentException {
+    private LoginUserRequest extractLoginUser(StompHeaderAccessor accessor) {
         LoginUserRequest loginUserRequest = (LoginUserRequest) accessor.getSessionAttributes().get("loginUser");
 
         if (loginUserRequest == null) {
-            throw new IllegalArgumentException("Login user is null in session attributes");
+            throw new GeneralErrorException(GeneralErrorCode.USER_NOT_FOUND);
         }
 
         return loginUserRequest;
@@ -69,13 +73,13 @@ public class StompEventListener {
         Long roomId = alreadyInGameUserCacheTemplate.opsForValue().get(USER_ID_PREFIX + userId);
 
         if (roomId == null) {
-            throw new IllegalStateException("User is not associated with any game");
+            throw new GameErrorException(GameErrorCode.USER_NOT_IN_GAME);
         }
 
         boolean delete = alreadyInGameUserCacheTemplate.delete(USER_ID_PREFIX + userId);
 
         if (!delete) {
-            throw new IllegalStateException("fail delete");
+            throw new GameErrorException(GameErrorCode.NOT_FOUND_ROOM, "Room ID: " + roomId);
         }
 
         return roomId;
@@ -83,7 +87,7 @@ public class StompEventListener {
 
     private Game findGameByRoomId(Long roomId) {
         return gameRepository.findById(String.valueOf(roomId))
-                .orElseThrow(() -> new IllegalStateException("Game not found for roomId: " + roomId));
+                .orElseThrow(() -> new GameErrorException(GameErrorCode.NOT_FOUND_ROOM, "Room ID: " + roomId));
     }
 
     private void removeUserFromGame(Game game, Long userId, Long roomId) throws IllegalArgumentException {
@@ -102,7 +106,7 @@ public class StompEventListener {
 
         int currentCount = count.updateAndGet(current -> {
             if (current < 1) {
-                throw new RuntimeException("Room capacity cannot be negative for roomId: " + roomId);
+                throw new RuntimeException("방 인원 음수가 될 수 없습니다.: " + roomId);
             }
 
             roomOccupancyCacheTemplate.opsForValue().decrement(ROOM_ID_PREFIX + roomId);
@@ -124,8 +128,8 @@ public class StompEventListener {
         roomOccupancyCacheTemplate.delete(ROOM_ID_PREFIX + roomId);
     }
 
-    private InGameUser findUser(long userId, long roomId) throws IllegalArgumentException {
-        User user = userRepository.findById(userId).orElseThrow(IllegalArgumentException::new);
+    private InGameUser findUser(long userId, long roomId) {
+        User user = userRepository.findById(userId).orElseThrow(() -> new GeneralErrorException(GeneralErrorCode.USER_NOT_FOUND));
 
         return new InGameUser(user.getId(), roomId, user.getEmail(), Role.USER, false);
     }

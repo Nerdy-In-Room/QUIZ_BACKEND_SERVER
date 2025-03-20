@@ -20,6 +20,7 @@ import org.redisson.api.RedissonClient;
 import org.springframework.data.domain.*;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.HashSet;
 import java.util.List;
@@ -36,14 +37,15 @@ public class RoomProducerService {
 
     private static final int PAGE_SIZE = 10;
     private final String ROOM_ID_PREFIX = "roomId:";
+    private final String ROOM_CREATE_LOCK_PREFIX = "room:create:";
 
     private final RedissonClient redissonClient;
     private final RedisTemplate<String, Integer> roomOccupancyCacheTemplate;
     private final RedisTemplate<String, RoomResponse> roomCreateCacheTemplate;
 
-    public RoomResponse createRoom(RoomCreateRequest roomRequest, LoginUserRequest loginUserRequest) throws IllegalAccessException {
+    public RoomResponse createRoom(RoomCreateRequest roomRequest, LoginUserRequest loginUserRequest) {
         RoomResponse roomResponse = null;
-        String lockKey = "room:create:" + roomRequest.UUID();
+        String lockKey = ROOM_CREATE_LOCK_PREFIX + roomRequest.UUID();
 
         RLock lock = redissonClient.getLock(lockKey);
         try {
@@ -80,7 +82,7 @@ public class RoomProducerService {
         return new PageImpl<>(responses, pageable, responses.size());
     }
 
-    private InGameUser findUser(long roomId, LoginUserRequest loginUserRequest) throws IllegalAccessException {
+    private InGameUser findUser(long roomId, LoginUserRequest loginUserRequest) {
         User user = userRepository.findById(loginUserRequest.userId()).orElseThrow();
 
         return new InGameUser(user.getId(), roomId, user.getEmail(), Role.ADMIN, false);
@@ -106,7 +108,7 @@ public class RoomProducerService {
         return roomRepository.save(room);
     }
 
-    private void createGameWithMasterUser(Long roomId, LoginUserRequest loginUserRequest) throws IllegalAccessException {
+    private void createGameWithMasterUser(Long roomId, LoginUserRequest loginUserRequest) {
         InGameUser masterUser = findUser(roomId, loginUserRequest);
         Game game = new Game(String.valueOf(roomId), roomId, 1, false, new HashSet<>());
         game.getGameUser().add(masterUser);
