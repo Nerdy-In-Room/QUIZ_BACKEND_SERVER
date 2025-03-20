@@ -13,6 +13,10 @@ import com.example.quiz.entity.Game;
 import com.example.quiz.entity.Room;
 import com.example.quiz.entity.user.User;
 import com.example.quiz.enums.Role;
+import com.example.quiz.exception.game.GameErrorCode;
+import com.example.quiz.exception.game.GameErrorException;
+import com.example.quiz.exception.general.GeneralErrorCode;
+import com.example.quiz.exception.general.GeneralErrorException;
 import com.example.quiz.mapper.RoomMapper;
 import com.example.quiz.repository.GameRepository;
 import com.example.quiz.repository.RoomRepository;
@@ -43,6 +47,8 @@ public class RoomService {
     private final SimpMessagingTemplate simpMessagingTemplate;
     private final RoomLockManager roomLockManager;
 
+    private final int INIT_ROOM_PEOPLE = 1;
+    private final int ROOM_MAX_PEOPLE = 8;
     private final String LOCK_PREFIX = "LOCK:";
     private final String ROOM_ID_PREFIX = "roomId:";
     private final String USER_ID_PREFIX = "userId:";
@@ -65,7 +71,7 @@ public class RoomService {
         try {
             Room room = findRoomById(roomId);
             Game game = findGameByRoomId(roomId);
-            InGameUser inGameUser = findUser(roomId, loginUserRequest);
+            InGameUser inGameUser = findInGameUser(roomId, loginUserRequest);
             // 방 삭제 여부 확인
             if (validateRoom(roomId)) {
                 return RoomMapper.INSTANCE.RoomToRoomEnterResponse(room, inGameUser, game.getGameUser());
@@ -93,25 +99,25 @@ public class RoomService {
         }
     }
 
-    public QuizRoomEnterResponse enterQuizRoom(long roomId, LoginUserRequest loginUserRequest) throws IllegalAccessException {
-        User user = userRepository.findById(loginUserRequest.userId()).orElseThrow(IllegalAccessException::new);
+    public QuizRoomEnterResponse enterQuizRoom(long roomId, LoginUserRequest loginUserRequest) {
+        User user = findUser(loginUserRequest);
         Room room = findRoomById(roomId);
-        InGameUser inGameUser = findUser(roomId, loginUserRequest);
+        InGameUser inGameUser = findInGameUser(roomId, loginUserRequest);
 
         return RoomMapper.INSTANCE.RoomToQuizRoomEnterResponse(inGameUser, user, room);
     }
 
     @Transactional
-    public RoomModifyResponse modifyRoom(RoomModifyRequest request, long roomId) throws IllegalAccessException {
-        Room room = roomRepository.findById(roomId).orElseThrow(IllegalAccessException::new);
+    public RoomModifyResponse modifyRoom(RoomModifyRequest request, long roomId) {
+        Room room = roomRepository.findById(roomId).orElseThrow(() -> new GameErrorException(GameErrorCode.NOT_FOUND_ROOM, "Room ID: " + roomId));
         room.changeRoomName(request.roomName());
         room.changeSubject(request.topicId());
 
         return new RoomModifyResponse(room.getRoomName(), room.getTopicId());
     }
 
-    private InGameUser findUser(long roomId, LoginUserRequest loginUserRequest) throws IllegalArgumentException {
-        User user = userRepository.findById(loginUserRequest.userId()).orElseThrow(IllegalArgumentException::new);
+    private InGameUser findInGameUser(long roomId, LoginUserRequest loginUserRequest) {
+        User user = findUser(loginUserRequest);
         Room room = findRoomById(roomId);
 
         if (loginUserRequest.email().equals(room.getMasterEmail())) {
@@ -121,18 +127,22 @@ public class RoomService {
         return new InGameUser(loginUserRequest.userId(), roomId, user.getEmail(), Role.USER, false);
     }
 
+    private User findUser(LoginUserRequest loginUserRequest) {
+        return userRepository.findById(loginUserRequest.userId()).orElseThrow(() -> new GeneralErrorException(GeneralErrorCode.USER_NOT_FOUND));
+    }
+
     private int incrementSubscriptionCount(Long roomId, Long userId) {
         if (!roomSubscriptionCount.containsKey(roomId)) {
-            roomSubscriptionCount.put(roomId, new AtomicInteger(1));
-            roomOccupancyCacheTemplate.opsForValue().set(ROOM_ID_PREFIX + roomId, 1);
+            roomSubscriptionCount.put(roomId, new AtomicInteger(INIT_ROOM_PEOPLE));
+            roomOccupancyCacheTemplate.opsForValue().set(ROOM_ID_PREFIX + roomId, INIT_ROOM_PEOPLE);
             alreadyInGameUserCacheTemplate.opsForValue().set(USER_ID_PREFIX + userId, roomId);
 
             return 1;
         }
 
         return roomSubscriptionCount.get(roomId).updateAndGet(c -> {
-            if (c >= 8) {
-                throw new RuntimeException("Room capacity reached : " + roomId);
+            if (c >= ROOM_MAX_PEOPLE) {
+                throw new GameErrorException(GameErrorCode.MAX_ROOM);
             }
 
             if (c == 0) {
@@ -148,14 +158,14 @@ public class RoomService {
 
     private boolean validateRoom(Long roomId) {
         Room room = roomRepository.findById(roomId)
-                .orElseThrow(() -> new IllegalArgumentException("Room not found"));
+                .orElseThrow(() -> new GameErrorException(GameErrorCode.NOT_FOUND_ROOM, "Room ID: " + roomId));
 
         return room.getRemoveStatus();
     }
 
     private void validateLoginUser(LoginUserRequest loginUserRequest) throws IllegalArgumentException {
         if (loginUserRequest == null) {
-            throw new IllegalArgumentException("Login user is null");
+            throw new GeneralErrorException(GeneralErrorCode.USER_NOT_FOUND);
         }
     }
 
@@ -167,7 +177,7 @@ public class RoomService {
                 Long findRoomId = alreadyInGameUserCacheTemplate.opsForValue().get(USER_ID_PREFIX + key);
 
                 if (findRoomId != null && findRoomId != roomId) {
-                    throw new RuntimeException("already in game user another room: " + userId);
+                    throw new GameErrorException(GameErrorCode.ALREADY_IN_ANOTHER_ROOM);
                 }
             }
         } catch (InterruptedException e) {
