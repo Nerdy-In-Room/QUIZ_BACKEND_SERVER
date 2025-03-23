@@ -11,10 +11,15 @@ import com.example.quiz.entity.Quiz;
 import com.example.quiz.entity.Room;
 import com.example.quiz.entity.user.User;
 import com.example.quiz.enums.Role;
+import com.example.quiz.exception.game.GameErrorCode;
+import com.example.quiz.exception.game.GameErrorException;
+import com.example.quiz.exception.general.GeneralErrorCode;
+import com.example.quiz.exception.general.GeneralErrorException;
 import com.example.quiz.repository.GameRepository;
 import com.example.quiz.repository.QuizRepository;
 import com.example.quiz.repository.RoomRepository;
 import com.example.quiz.repository.UserRepository;
+import com.example.quiz.validation.GameValidation;
 import com.example.quiz.vo.InGameUser;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -151,10 +156,12 @@ public class GameService {
     }
 
     public ResponseCheckQuiz checkAnswer(String id, RequestAnswer requestAnswer) {
-        User user = userRepository.findById(requestAnswer.userId()).orElseThrow(() -> new RuntimeException("User not found"));
-        Room room = roomRepository.findById(Long.valueOf(id)).orElseThrow(() -> new RuntimeException("Room not found"));
+        GameValidation.validateAnswer(requestAnswer.answer());
+
+        User user = userRepository.findById(requestAnswer.userId()).orElseThrow(() -> new GeneralErrorException(GeneralErrorCode.USER_NOT_FOUND));
+        Room room = roomRepository.findById(Long.valueOf(id)).orElseThrow(() -> new GameErrorException(GameErrorCode.NOT_FOUND_ROOM, "Room ID: " + id));
         Long correctQuizId = correctQuizId(roomQuizMap.get(room.getRoomId()));
-        Quiz quiz = quizRepository.findById(correctQuizId).orElseThrow(() -> new RuntimeException("Quiz not found"));
+        Quiz quiz = quizRepository.findById(correctQuizId).orElseThrow(() -> new GameErrorException(GameErrorCode.QUIZ_NOT_FOUND));
         boolean isRight = check(requestAnswer.answer(), quiz);
 
         // 정답이 맞으면 정답 반환. 오답이면 null 반환.
