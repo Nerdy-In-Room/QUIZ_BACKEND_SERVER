@@ -12,6 +12,7 @@ import com.example.quiz.mapper.RoomMapper;
 import com.example.quiz.repository.GameRepository;
 import com.example.quiz.repository.RoomRepository;
 import com.example.quiz.repository.UserRepository;
+import com.example.quiz.validation.RoomCreateValidation;
 import com.example.quiz.vo.InGameUser;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -103,6 +104,10 @@ public class RoomProducerService {
     }
 
     private Room saveRoom(RoomCreateRequest roomRequest, LoginUserRequest loginUserRequest) {
+        RoomCreateValidation.validateRoomName(roomRequest.roomName());
+        RoomCreateValidation.validateMaxPeople(roomRequest.maxPeople());
+        RoomCreateValidation.validateQuizCount(roomRequest.quizCount());
+
         Room room = RoomMapper.INSTANCE.RoomCreateRequestToRoom(roomRequest, loginUserRequest.email());
 
         return roomRepository.save(room);
