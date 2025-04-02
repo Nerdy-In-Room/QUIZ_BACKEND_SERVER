@@ -25,7 +25,7 @@
 <!-- 단일 Ready 버튼 추가: "내" Ready 상태만 토글 -->
 <button id="ready-btn"
         class="ready-btn"
-        th:if="${roomInfo.role() == T(com.example.quiz.enums.Role).USER}"
+        th:if="${roomInfo.role() == T(com.example.quiz.global.type.Role).USER}"
         th:attr="data-user-id=${roomInfo.inGameUser().id}">
     Ready Game
 </button>
@@ -33,7 +33,7 @@
 <!-- 방장(Admin)만 Start Game 버튼 등 필요시 추가 -->
 <button id="start-btn"
         class="start-btn"
-        th:if="${roomInfo.role() == T(com.example.quiz.enums.Role).ADMIN}"
+        th:if="${roomInfo.role() == T(com.example.quiz.global.type.Role).ADMIN}"
         th:attr="data-user-id=${roomInfo.inGameUser().id}">
     Start Game
 </button>
@@ -61,11 +61,11 @@
         <td th:text="${participant.id}"></td>
         <td th:text="${participant.username}"></td>
         <td>
-        <span th:if="${participant.role ne T(com.example.quiz.enums.Role).ADMIN}"
+        <span th:if="${participant.role ne T(com.example.quiz.global.type.Role).ADMIN}"
               th:text="${participant.readyStatus ? 'Ready' : 'Not Ready'}"
               th:classappend="${participant.readyStatus ? 'ready-true' : 'ready-false'}">
         </span>
-            <span th:if="${participant.role eq T(com.example.quiz.enums.Role).ADMIN}">
+            <span th:if="${participant.role eq T(com.example.quiz.global.type.Role).ADMIN}">
             <!-- Admin은 Ready Status 미표시 -->
             방장
         </span>
