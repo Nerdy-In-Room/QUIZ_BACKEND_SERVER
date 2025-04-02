@@ -1,6 +1,5 @@
-package com.example.quiz.exception;
+package com.example.quiz.global.exception;
 
-import com.example.quiz.exception.game.GameErrorException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -12,20 +11,17 @@ import java.util.HashMap;
 import java.util.Map;
 
 @ControllerAdvice
-public class ServiceExceptionHandler {
+public class GlobalExceptionHandler {
 
-    private static final Logger log = LoggerFactory.getLogger(ServiceExceptionHandler.class);
+    private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
-    @ExceptionHandler(GameErrorException.class)
-    public ResponseEntity<Map<String, Object>> handleCustomErrorException(GameErrorException ex) {
-        log.error("CustomErrorException 발생: {}, 상태 코드: {}", ex.getMessage(), ex.getErrorCode().getStatus());
+    @ExceptionHandler(CustomErrorException.class)
+    public ResponseEntity<Map<String, Object>> handleCustomException(CustomErrorException ex) {
+        Map<String, Object> response = new HashMap<>();
+        response.put("status", ex.getErrorCode().getStatus().value());
+        response.put("message", ex.getErrorCode().getMessage());
 
-        Map<String, Object> errorResponse = new HashMap<>();
-        errorResponse.put("status", ex.getErrorCode().getStatus().value());
-        errorResponse.put("error", ex.getErrorCode().name());
-        errorResponse.put("message", ex.getMessage());
-
-        return new ResponseEntity<>(errorResponse, ex.getErrorCode().getStatus());
+        return new ResponseEntity<>(response, ex.getErrorCode().getStatus());
     }
 
     @ExceptionHandler(Exception.class)
