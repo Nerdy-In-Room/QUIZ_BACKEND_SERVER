@@ -1,28 +1,31 @@
-package com.example.quiz.service;
+package com.example.quiz.game.service;
 
-import com.example.quiz.dto.request.RequestAnswer;
-import com.example.quiz.dto.request.RequestRemainQuiz;
-import com.example.quiz.dto.response.ResponseCheckQuiz;
-import com.example.quiz.dto.response.ResponseReadyGame;
-import com.example.quiz.dto.response.ResponseQuiz;
-import com.example.quiz.dto.response.ResponseStartGame;
-import com.example.quiz.entity.Game;
-import com.example.quiz.entity.Quiz;
-import com.example.quiz.entity.Room;
-import com.example.quiz.entity.user.User;
-import com.example.quiz.enums.Role;
-import com.example.quiz.exception.game.GameErrorCode;
-import com.example.quiz.exception.game.GameErrorException;
-import com.example.quiz.exception.general.GeneralErrorCode;
-import com.example.quiz.exception.general.GeneralErrorException;
-import com.example.quiz.repository.GameRepository;
-import com.example.quiz.repository.QuizRepository;
-import com.example.quiz.repository.RoomRepository;
-import com.example.quiz.repository.UserRepository;
-import com.example.quiz.validation.GameValidation;
-import com.example.quiz.vo.InGameUser;
+import com.example.quiz.global.type.Role;
+import com.example.quiz.game.dto.game.response.ResponseCheckQuiz;
+import com.example.quiz.game.dto.game.response.ResponseQuiz;
+import com.example.quiz.game.entity.Game;
+import com.example.quiz.game.exception.GameErrorCode;
+import com.example.quiz.game.exception.GameErrorException;
+import com.example.quiz.game.model.InGameUser;
+import com.example.quiz.game.repository.GameRepository;
+import com.example.quiz.game.validation.GameValidation;
+import com.example.quiz.global.exception.general.GeneralErrorCode;
+import com.example.quiz.global.exception.general.GeneralErrorException;
+import com.example.quiz.quiz.dto.request.RequestAnswer;
+import com.example.quiz.quiz.dto.request.RequestRemainQuiz;
+import com.example.quiz.quiz.dto.response.ResponseReadyGame;
+import com.example.quiz.quiz.dto.response.ResponseStartGame;
+import com.example.quiz.quiz.entity.Quiz;
+import com.example.quiz.quiz.repository.QuizRepository;
+import com.example.quiz.room.entity.Room;
+import com.example.quiz.room.exception.RoomErrorCode;
+import com.example.quiz.room.exception.RoomErrorException;
+import com.example.quiz.room.repository.RoomRepository;
+import com.example.quiz.user.entity.User;
+import com.example.quiz.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -30,40 +33,41 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 @Slf4j
-@RequiredArgsConstructor
 @Service
+@RequiredArgsConstructor
 public class GameService {
-
     private static final Map<Long, List<Long>> roomQuizMap = new ConcurrentHashMap<>();
     private static final Map<Long, Map<Long, Long>> currentInGameScore = new ConcurrentHashMap<>();
     private static final Map<Long, Integer> remainQuizMap = new ConcurrentHashMap<>();
+
     private final GameRepository gameRepository;
     private final QuizRepository quizRepository;
     private final RoomRepository roomRepository;
     private final UserRepository userRepository;
 
+    private final SimpMessagingTemplate messagingTemplate;
+
     @Transactional
-    public ResponseReadyGame toggleReadyStatus(String roomId, Long userId) {
+    public void toggleReadyStatus(String roomId, Long userId) {
         // User, Game 조회
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new GeneralErrorException(GeneralErrorCode.USER_NOT_FOUND, "유저를 찾을 수 없습니다."));
         Game game = gameRepository.findById(roomId)
-                .orElseThrow(() -> new RuntimeException("Game not found"));
+                .orElseThrow(() -> new RoomErrorException(RoomErrorCode.NOT_FOUND_ROOM, "게임방을 찾을 수 없습니다."));
 
         // 현재 로그인한 InGameUser 반환
         Set<InGameUser> inGameUserSet = game.getGameUser();
-        // TODO Optional 반환값으로 변환
         InGameUser currentUser = findUser(inGameUserSet, userId);
 
         // 준비상태 토글
         toggle(game, currentUser);
         // User 준비상태 따라서 DTO 반환
-        return handleReadyStatus(user, currentUser, inGameUserSet);
+        messagingTemplate.convertAndSend("/pub/room/" + roomId, handleReadyStatus(user, currentUser, inGameUserSet));
     }
 
     private InGameUser findUser(Set<InGameUser> inGameUserSet, long userId) {
-        for(InGameUser inGameUser : inGameUserSet) {
-            if(inGameUser.getId() == userId) {
+        for (InGameUser inGameUser : inGameUserSet) {
+            if (inGameUser.getId() == userId) {
                 return inGameUser;
             }
         }
@@ -76,23 +80,24 @@ public class GameService {
         game.getGameUser().add(inGameUser);
         gameRepository.save(game);
     }
+
     // User
     private ResponseReadyGame handleReadyStatus(User user, InGameUser inGameUser, Set<InGameUser> inGameUserSet) {
-        if(isAllReady(inGameUserSet)) {
+        if (isAllReady(inGameUserSet)) {
             return new ResponseReadyGame(user.getId(), user.getEmail(), user.getRole(), inGameUser.isReadyStatus(), true);
-        }
-        else {
+        } else {
             return new ResponseReadyGame(user.getId(), user.getEmail(), user.getRole(), inGameUser.isReadyStatus(), false);
         }
     }
+
     // User 인 사람이 모두 Ready 인지 판단
     private boolean isAllReady(Set<InGameUser> inGameUserSet) {
-        for(InGameUser inGameUser : inGameUserSet) {
+        for (InGameUser inGameUser : inGameUserSet) {
             // Admin 통과
-            if(!isUser(inGameUser)) {
+            if (!isUser(inGameUser)) {
                 continue;
             }
-            if(!inGameUser.isReadyStatus()) {
+            if (!inGameUser.isReadyStatus()) {
                 return false;
             }
         }
@@ -104,27 +109,27 @@ public class GameService {
     }
 
     @Transactional
-    public ResponseStartGame startGame(String roomId, RequestRemainQuiz requestRemainQuiz) {
-        Room room = roomRepository.findById(Long.parseLong(roomId)).orElseThrow(() -> new RuntimeException("Room not found"));
+    public void startGame(String roomId, RequestRemainQuiz requestRemainQuiz) {
+        Room room = roomRepository.findById(Long.parseLong(roomId)).orElseThrow(() -> new RoomErrorException(RoomErrorCode.NOT_FOUND_ROOM, "Room ID: " + roomId));
         remainQuizMap.put(Long.parseLong(roomId), room.getQuizCount());
         room.changeQuizCount(requestRemainQuiz.remainQuiz());
 
-        return new ResponseStartGame(room.getQuizCount());
+        messagingTemplate.convertAndSend("/pub/room/" + roomId, new ResponseStartGame(room.getQuizCount()));
     }
 
     @Transactional
-    public ResponseQuiz sendQuiz(String roomId) {
-        Room room = roomRepository.findById(Long.valueOf(roomId)).orElseThrow(() -> new RuntimeException("Room not found"));
+    public void sendQuiz(String roomId) {
+        Room room = roomRepository.findById(Long.valueOf(roomId)).orElseThrow(() -> new RoomErrorException(RoomErrorCode.NOT_FOUND_ROOM, "Room ID: " + roomId));
         Quiz quiz = selectRandomQuiz(Long.parseLong(roomId), room.getTopicId());
 
         remainQuizMap.merge(Long.parseLong(roomId), 1, (oldValue, newValue) -> oldValue - 1);
         makeGame(Long.parseLong(roomId));
 
-        return new ResponseQuiz(quiz.getProblem(), quiz.getCorrectAnswer(), quiz.getDescription());
+        messagingTemplate.convertAndSend("/pub/quiz/" + roomId, new ResponseQuiz(quiz.getProblem(), quiz.getCorrectAnswer(), quiz.getDescription()));
     }
 
     private void makeGame(Long roomId) {
-        if(remainQuizMap.get(roomId) == 0) {
+        if (remainQuizMap.get(roomId) == 0) {
             roomRepository.findById(roomId).ifPresent(Room::removeStatus);
             Game game = new Game(String.valueOf(roomId), roomId, 0, false, new HashSet<>());
             gameRepository.save(game);
@@ -155,36 +160,38 @@ public class GameService {
         return selectedQuiz;
     }
 
-    public ResponseCheckQuiz checkAnswer(String id, RequestAnswer requestAnswer) {
+    public void checkAnswer(String id, RequestAnswer requestAnswer) {
         GameValidation.validateAnswer(requestAnswer.answer());
 
         User user = userRepository.findById(requestAnswer.userId()).orElseThrow(() -> new GeneralErrorException(GeneralErrorCode.USER_NOT_FOUND));
-        Room room = roomRepository.findById(Long.valueOf(id)).orElseThrow(() -> new GameErrorException(GameErrorCode.NOT_FOUND_ROOM, "Room ID: " + id));
+        Room room = roomRepository.findById(Long.valueOf(id)).orElseThrow(() -> new RoomErrorException(RoomErrorCode.NOT_FOUND_ROOM, "Room ID: " + id));
         Long correctQuizId = correctQuizId(roomQuizMap.get(room.getRoomId()));
         Quiz quiz = quizRepository.findById(correctQuizId).orElseThrow(() -> new GameErrorException(GameErrorCode.QUIZ_NOT_FOUND));
         boolean isRight = check(requestAnswer.answer(), quiz);
 
         // 정답이 맞으면 정답 반환. 오답이면 null 반환.
-        if(isRight) {
+        if (isRight) {
             increaseScore(user.getId(), room.getRoomId());
             // final winner 반환
             List<String> finalWinners = findFinalWinners(room.getRoomId());
-            if(requestAnswer.finalQuiz()) {
+            if (requestAnswer.finalQuiz()) {
                 removeInGameInfo(room.getRoomId());
-                return new ResponseCheckQuiz(user.getEmail(), true, true, finalWinners, quiz.getCorrectAnswer(), quiz.getDescription());
+                messagingTemplate.convertAndSend("/pub/quiz/" + id
+                        , new ResponseCheckQuiz(user.getEmail(), true, true, finalWinners, quiz.getCorrectAnswer(), quiz.getDescription()));
+            } else {
+                messagingTemplate.convertAndSend("/pub/quiz/" + id
+                        , new ResponseCheckQuiz(user.getEmail(), true, false, finalWinners, quiz.getCorrectAnswer(), quiz.getDescription()));
             }
-            else {
-                return new ResponseCheckQuiz(user.getEmail(), true, false, finalWinners, quiz.getCorrectAnswer(), quiz.getDescription());
-            }
-        }
-        else {
-            return new ResponseCheckQuiz(user.getEmail(), false, false,null, quiz.getCorrectAnswer(), quiz.getDescription());
+        } else {
+            messagingTemplate.convertAndSend("/pub/quiz/" + id
+                    , new ResponseCheckQuiz(user.getEmail(), false, false, null, quiz.getCorrectAnswer(), quiz.getDescription()));
         }
     }
 
     private boolean check(String answer, Quiz quiz) {
         return quiz.getCorrectAnswer().equals(answer);
     }
+
     // 게임이 끝난 후 인게임 정보 삭제
     private void removeInGameInfo(Long roomId) {
         currentInGameScore.remove(roomId);
@@ -197,12 +204,14 @@ public class GameService {
                 .findFirst()
                 .orElse(-1L);
     }
+
     // 방이 없으면 추가하고, 점수 카운팅을 한다
     private void increaseScore(Long userId, Long roomId) {
         currentInGameScore.putIfAbsent(roomId, new HashMap<>());
         Map<Long, Long> score = currentInGameScore.get(roomId);
         score.put(userId, score.getOrDefault(userId, 0L) + 1L);
     }
+
     // 최종 우승자 반환
     private List<String> findFinalWinners(Long roomId) {
         Map<Long, Long> score = currentInGameScore.get(roomId);
@@ -224,7 +233,7 @@ public class GameService {
                 // userId -> email 변환 (UserRepository 예시)
                 .map(userId -> userRepository.findById(userId)
                         .map(User::getEmail)
-                        .orElse("unknown@example.com"))  // 존재하지 않는 사용자 처리
+                        .orElse("존재하지 않는 유저"))  // 존재하지 않는 사용자 처리
                 .toList();
     }
 }
