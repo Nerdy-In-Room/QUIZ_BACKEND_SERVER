@@ -1,4 +1,4 @@
-package com.example.quiz.game.dto.game.response;
+package com.example.quiz.game.dto.response;
 
 import java.util.List;
 
