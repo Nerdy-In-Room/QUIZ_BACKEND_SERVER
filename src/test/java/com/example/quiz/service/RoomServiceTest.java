@@ -1,10 +1,12 @@
 package com.example.quiz.service;
 
-import com.example.quiz.dto.User.LoginUserRequest;
-import com.example.quiz.dto.room.request.RoomCreateRequest;
-import com.example.quiz.entity.user.User;
-import com.example.quiz.enums.Role;
-import com.example.quiz.repository.UserRepository;
+import com.example.quiz.user.dto.request.LoginUserRequest;
+import com.example.quiz.room.dto.request.RoomCreateRequest;
+import com.example.quiz.user.entity.User;
+import com.example.quiz.global.type.Role;
+import com.example.quiz.user.repository.UserRepository;
+import com.example.quiz.room.service.RoomProducerService;
+import com.example.quiz.room.service.RoomService;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -95,7 +97,7 @@ class RoomServiceTest {
                             barrier.await();
 
                             roomService.enterRoom(roomNumber.getAndIncrement() % 2 + 1, new LoginUserRequest(now, "email", "USER"), "");
-                        } catch (RuntimeException | IllegalAccessException e) {
+                        } catch (RuntimeException e) {
                             log.info("user: {}, {}", now, e.getMessage());
                         } catch (BrokenBarrierException | InterruptedException e) {
                             throw new RuntimeException(e);

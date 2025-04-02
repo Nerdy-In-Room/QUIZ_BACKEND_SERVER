@@ -54,7 +54,7 @@
     <!-- Admin만 보이는 CreateQuiz 버튼: RemainQuiz 태그 "밑"에 배치 -->
     <button id="createQuizBtn"
             class = "create-quiz-btn"
-            th:if="${responseQuiz.role() == T(com.example.quiz.enums.Role).ADMIN}">
+            th:if="${responseQuiz.role() == T(com.example.quiz.global.type.Role).ADMIN}">
         Create Quiz
     </button>
 </section>

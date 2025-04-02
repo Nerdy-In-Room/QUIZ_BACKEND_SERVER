@@ -1,15 +1,16 @@
 package com.example.quiz.service;
 
-import com.example.quiz.dto.User.LoginUserRequest;
-import com.example.quiz.dto.room.request.RoomCreateRequest;
-import com.example.quiz.dto.room.response.RoomResponse;
-import com.example.quiz.entity.Room;
-import com.example.quiz.entity.user.User;
-import com.example.quiz.enums.Role;
-import com.example.quiz.mapper.RoomMapper;
-import com.example.quiz.repository.GameRepository;
-import com.example.quiz.repository.RoomRepository;
-import com.example.quiz.repository.UserRepository;
+import com.example.quiz.user.dto.request.LoginUserRequest;
+import com.example.quiz.room.dto.request.RoomCreateRequest;
+import com.example.quiz.room.dto.response.RoomResponse;
+import com.example.quiz.room.entity.Room;
+import com.example.quiz.user.entity.User;
+import com.example.quiz.global.type.Role;
+import com.example.quiz.room.mapper.RoomMapper;
+import com.example.quiz.game.repository.GameRepository;
+import com.example.quiz.room.repository.RoomRepository;
+import com.example.quiz.user.repository.UserRepository;
+import com.example.quiz.room.service.RoomProducerService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
