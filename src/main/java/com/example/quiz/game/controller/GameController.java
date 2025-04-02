@@ -1,7 +1,7 @@
 package com.example.quiz.game.controller;
 
 import com.example.quiz.quiz.dto.request.RequestRemainQuiz;
-import com.example.quiz.game.dto.game.request.RequestUserId;
+import com.example.quiz.game.dto.request.RequestUserId;
 import com.example.quiz.game.service.GameService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

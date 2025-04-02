@@ -1,8 +1,8 @@
 package com.example.quiz.game.service;
 
 import com.example.quiz.global.type.Role;
-import com.example.quiz.game.dto.game.response.ResponseCheckQuiz;
-import com.example.quiz.game.dto.game.response.ResponseQuiz;
+import com.example.quiz.game.dto.response.ResponseCheckQuiz;
+import com.example.quiz.game.dto.response.ResponseQuiz;
 import com.example.quiz.game.entity.Game;
 import com.example.quiz.game.exception.GameErrorCode;
 import com.example.quiz.game.exception.GameErrorException;
