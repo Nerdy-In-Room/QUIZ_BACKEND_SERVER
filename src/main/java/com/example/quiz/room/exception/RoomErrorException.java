@@ -15,7 +15,7 @@ public class RoomErrorException extends CustomErrorException {
     }
 
     public RoomErrorException(RoomErrorCode errorCode, Object additionalData) {
-        super(errorCode.getMessage() + " (" + additionalData + ")", errorCode);
+        super(errorCode.getMessage() + " " + additionalData, errorCode);
         this.errorCode = errorCode;
         this.additionalData = additionalData;
     }
