@@ -1,0 +1,55 @@
+server:
+  port: 80
+
+spring:
+  main:
+    allow-bean-definition-overriding: true
+  datasource:
+    url: jdbc:mysql://127.0.0.1:3307/test
+    username: phc
+    password: 1394
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  data:
+    mongodb:
+      uri: mongodb://127.0.0.1:27017/test
+    redis:
+      host: 127.0.0.1
+      port: 6379
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: create-drop
+  sql:
+    init:
+      mode: always
+  output:
+    ansi:
+      enabled: always
+  security:
+    oauth2:
+      client:
+        registration:
+          kakao:
+            client-id: "${kakao.client-id}"
+            redirect-uri: "${kakao.redirect-uri}"
+            authorization-grant-type: "${kakao.authorization-grant-type}"
+        provider:
+          kakao:
+            token-uri: "${kakao.token-uri}"
+            user-info-uri: "${kakao.user-info-uri}"
+  mvc:
+    pathmatch:
+      matching-strategy: PATH_PATTERN_PARSER
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: prometheus
+  prometheus:
+    metrics:
+      export:
+        enabled: true
+
+secret:
+  key: test

@@ -57,7 +57,7 @@ public class RoomService {
     private final RedissonClient redissonClient;
     private final RedisEventPublisher redisEventPublisher;
     private final Map<Long, AtomicInteger> roomSubscriptionCount;
-    private final RedisTemplate<String, Integer> roomOccupancyCacheTemplate;
+    private final RedisTemplate<String, Integer> roomPeopleCacheTemplate;
     private final RedisTemplate<String, Long> alreadyInGameUserCacheTemplate;
 
     public RoomEnterResponse enterRoom(long roomId, LoginUserRequest loginUserRequest, String status) {
@@ -139,7 +139,7 @@ public class RoomService {
     private int incrementSubscriptionCount(Long roomId, Long userId, int maxUser) {
         if (!roomSubscriptionCount.containsKey(roomId)) {
             roomSubscriptionCount.put(roomId, new AtomicInteger(INIT_ROOM_PEOPLE));
-            roomOccupancyCacheTemplate.opsForValue().set(ROOM_ID_PREFIX + roomId, INIT_ROOM_PEOPLE);
+            roomPeopleCacheTemplate.opsForValue().set(ROOM_ID_PREFIX + roomId, INIT_ROOM_PEOPLE);
             alreadyInGameUserCacheTemplate.opsForValue().set(USER_ID_PREFIX + userId, roomId);
 
             return 1;
@@ -154,7 +154,7 @@ public class RoomService {
                 return c;
             }
 
-            roomOccupancyCacheTemplate.opsForValue().increment(ROOM_ID_PREFIX + roomId);
+            roomPeopleCacheTemplate.opsForValue().increment(ROOM_ID_PREFIX + roomId);
             alreadyInGameUserCacheTemplate.opsForValue().set(USER_ID_PREFIX + userId, roomId);
 
             return c + 1;

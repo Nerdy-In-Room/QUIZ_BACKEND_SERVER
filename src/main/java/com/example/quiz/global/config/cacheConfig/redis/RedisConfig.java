@@ -37,7 +37,7 @@ public class RedisConfig {
     }
 
     @Bean
-    public RedisTemplate<String, Integer> roomOccupancyCacheTemplate(RedisConnectionFactory redisConnectionFactory) {
+    public RedisTemplate<String, Integer> roomPeopleCacheTemplate(RedisConnectionFactory redisConnectionFactory) {
         RedisTemplate<String, Integer> template = new RedisTemplate<>();
         template.setConnectionFactory(redisConnectionFactory);
         template.setKeySerializer(new StringRedisSerializer());
@@ -67,7 +67,7 @@ public class RedisConfig {
     }
 
     @Bean
-    public RedisTemplate<String, ChangeCurrentPeople> changeCurrentOccupanciesPublishTemplate (RedisConnectionFactory redisConnectionFactory) {
+    public RedisTemplate<String, ChangeCurrentPeople> changeCurrentPeoplePublishTemplate (RedisConnectionFactory redisConnectionFactory) {
         RedisTemplate<String, ChangeCurrentPeople> template = new RedisTemplate<>();
         template.setConnectionFactory(redisConnectionFactory);
         template.setKeySerializer(new StringRedisSerializer());

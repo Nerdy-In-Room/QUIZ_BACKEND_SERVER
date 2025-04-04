@@ -10,13 +10,13 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class RedisEventPublisher {
     private final RedisTemplate<Long, RoomResponse> roomCreatePublishTemplate;
-    private final RedisTemplate<String, ChangeCurrentPeople> changeCurrentOccupanciesPublishTemplate;
+    private final RedisTemplate<String, ChangeCurrentPeople> changeCurrentPeoplePublishTemplate;
 
     public void publishCreatEvent(String channel, RoomResponse roomResponse) {
         roomCreatePublishTemplate.convertAndSend(channel, roomResponse);
     }
 
     public void publishChangeCurrentOccupancies(String channel, ChangeCurrentPeople changeCurrentPeople) {
-        changeCurrentOccupanciesPublishTemplate.convertAndSend(channel, changeCurrentPeople);
+        changeCurrentPeoplePublishTemplate.convertAndSend(channel, changeCurrentPeople);
     }
 }

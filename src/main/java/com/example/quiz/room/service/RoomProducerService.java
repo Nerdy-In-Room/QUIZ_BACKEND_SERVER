@@ -40,7 +40,7 @@ public class RoomProducerService {
     private final String ROOM_CREATE_LOCK_PREFIX = "room:create:";
 
     private final RedissonClient redissonClient;
-    private final RedisTemplate<String, Integer> roomOccupancyCacheTemplate;
+    private final RedisTemplate<String, Integer> roomPeopleCacheTemplate;
     private final RedisTemplate<String, RoomResponse> roomCreateCacheTemplate;
 
     public RoomResponse createRoom(RoomCreateRequest roomRequest, LoginUserRequest loginUserRequest) {
@@ -48,6 +48,7 @@ public class RoomProducerService {
         String lockKey = ROOM_CREATE_LOCK_PREFIX + roomRequest.UUID();
 
         RLock lock = redissonClient.getLock(lockKey);
+
         try {
             if (lock.tryLock(5, 10, TimeUnit.SECONDS)) {
                 roomResponse = roomCreateCacheTemplate.opsForValue().get(roomRequest.UUID());
@@ -92,7 +93,7 @@ public class RoomProducerService {
         return roomRepository.findAllByRemoveStatus(false, pageable)
                 .stream()
                 .map(room -> {
-                    Integer currentPeople = roomOccupancyCacheTemplate.opsForValue().get(ROOM_ID_PREFIX + room.getRoomId());
+                    Integer currentPeople = roomPeopleCacheTemplate.opsForValue().get(ROOM_ID_PREFIX + room.getRoomId());
 
                     return currentPeople != null
                             ? RoomMapper.INSTANCE.RoomToRoomListResponse(room, currentPeople)
@@ -103,6 +104,7 @@ public class RoomProducerService {
     }
 
     private Room saveRoom(RoomCreateRequest roomRequest, LoginUserRequest loginUserRequest) {
+        RoomCreateValidation.validateTopicId(roomRequest.topicId());
         RoomCreateValidation.validateRoomName(roomRequest.roomName());
         RoomCreateValidation.validateMaxPeople(roomRequest.maxPeople());
         RoomCreateValidation.validateQuizCount(roomRequest.quizCount());
