@@ -47,4 +47,10 @@ public class Room {
             this.quizCount = quizCount;
         }
     }
+
+    public void changeMaxPeople(Integer maxPeople) {
+        if (maxPeople != null) {
+            this.maxPeople = maxPeople;
+        }
+    }
 }
