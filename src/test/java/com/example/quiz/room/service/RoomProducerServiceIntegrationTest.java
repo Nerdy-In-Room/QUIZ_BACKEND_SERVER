@@ -85,7 +85,7 @@ class RoomProducerServiceIntegrationTest {
         // given
         String uuid = "test-uuid";
         RoomCreateRequest roomCreateRequest = new RoomCreateRequest("Test Room", 1L, 8, 5, uuid);
-        LoginUserRequest loginUserRequest = new LoginUserRequest(1L, "test@example.com", Role.USER.getRole());
+        LoginUserRequest loginUserRequest = new LoginUserRequest(1L, "test@example.com", Role.USER);
         userRepository.save(new User(1L, "test@example.com_3002860612", "test@example.com", Role.USER));
 
         when(lock.tryLock(5, 10, TimeUnit.SECONDS)).thenReturn(true);
@@ -107,7 +107,7 @@ class RoomProducerServiceIntegrationTest {
         // given
         String uuid = "test-uuid";
         RoomCreateRequest roomCreateRequest = new RoomCreateRequest("Test Room", 1L, 8, 5, uuid);
-        LoginUserRequest loginUserRequest = new LoginUserRequest(1L, "test@example.com", "USER");
+        LoginUserRequest loginUserRequest = new LoginUserRequest(1L, "test@example.com", Role.USER);
         userRepository.save(new User(1L, "test@example.com_3002860612", "test@example.com", Role.USER));
 
         new Thread(() -> {
@@ -130,7 +130,7 @@ class RoomProducerServiceIntegrationTest {
         // given
         String uuid = "test-uuid";
         RoomCreateRequest roomCreateRequest = new RoomCreateRequest("Test Room", 1L, 8, 5, uuid);
-        LoginUserRequest loginUserRequest = new LoginUserRequest(1L, "test@example.com", "USER");
+        LoginUserRequest loginUserRequest = new LoginUserRequest(1L, "test@example.com", Role.USER);
 
         userRepository.save(new User(1L, "test@example.com_3002860612", "test@example.com", Role.USER));
 
@@ -157,8 +157,8 @@ class RoomProducerServiceIntegrationTest {
         RoomCreateRequest request1 = new RoomCreateRequest("Room A", 1L, 8, 5, uuid1);
         RoomCreateRequest request2 = new RoomCreateRequest("Room B", 2L, 8, 5, uuid2);
 
-        LoginUserRequest user1 = new LoginUserRequest(1L, "user1@example.com", "USER");
-        LoginUserRequest user2 = new LoginUserRequest(2L, "user2@example.com", "USER");
+        LoginUserRequest user1 = new LoginUserRequest(1L, "user1@example.com", Role.USER);
+        LoginUserRequest user2 = new LoginUserRequest(2L, "user2@example.com", Role.USER);
 
         userRepository.save(new User(1L, "user1@example.com_hash", "user1@example.com", Role.USER));
         userRepository.save(new User(2L, "user2@example.com_hash", "user2@example.com", Role.USER));
@@ -204,7 +204,7 @@ class RoomProducerServiceIntegrationTest {
             String ROOM_ID_PREFIX = "roomId:";
             RoomCreateRequest request = new RoomCreateRequest("room" + i, 1L, 8, 8, "UUID" + i);
             User user = userRepository.save(new User("test" + i, "test" + i + "@sample.com", Role.USER));
-            LoginUserRequest loginUserRequest = new LoginUserRequest(user.getId(), user.getEmail(), user.getRole().getRole());
+            LoginUserRequest loginUserRequest = new LoginUserRequest(user.getId(), user.getEmail(), Role.USER);
             RoomResponse roomResponse = roomProducerService.createRoom(request, loginUserRequest);
             roomPeopleCacheTemplate.opsForValue().set(ROOM_ID_PREFIX + roomResponse.roomId(), 1);
         }

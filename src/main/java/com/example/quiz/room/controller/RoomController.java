@@ -76,8 +76,8 @@ public class RoomController {
 
     @ResponseBody
     @PatchMapping("/room/{roomId}")
-    public ResponseEntity<RoomModifyResponse> modifyRoom(@PathVariable Long roomId, RoomModifyRequest request) {
-        RoomModifyResponse roomModifyResponse = roomService.modifyRoom(request, roomId);
+    public ResponseEntity<RoomModifyResponse> modifyRoom(@PathVariable Long roomId, RoomModifyRequest request, @LoginUser LoginUserRequest loginUserRequest) {
+        RoomModifyResponse roomModifyResponse = roomService.modifyRoom(request, roomId, loginUserRequest);
 
         return ResponseEntity.ok(roomModifyResponse);
     }

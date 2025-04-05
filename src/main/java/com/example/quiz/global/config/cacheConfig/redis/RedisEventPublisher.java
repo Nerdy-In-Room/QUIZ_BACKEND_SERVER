@@ -16,7 +16,7 @@ public class RedisEventPublisher {
         roomCreatePublishTemplate.convertAndSend(channel, roomResponse);
     }
 
-    public void publishChangeCurrentOccupancies(String channel, ChangeCurrentPeople changeCurrentPeople) {
+    public void publishChangeCurrentPeople(String channel, ChangeCurrentPeople changeCurrentPeople) {
         changeCurrentPeoplePublishTemplate.convertAndSend(channel, changeCurrentPeople);
     }
 }
