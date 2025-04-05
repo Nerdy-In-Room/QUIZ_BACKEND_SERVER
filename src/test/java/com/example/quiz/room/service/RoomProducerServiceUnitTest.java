@@ -60,7 +60,7 @@ public class RoomProducerServiceUnitTest {
         String uuid = "test-uuid";
         User user = new User(1L, "test@example.com_3002860612", "test@example.com", Role.USER);
 
-        LoginUserRequest loginUserRequest = new LoginUserRequest(1L, "test@example.com", "USER");
+        LoginUserRequest loginUserRequest = new LoginUserRequest(1L, "test@example.com", Role.USER);
         RoomCreateRequest roomCreateRequest = new RoomCreateRequest("Test Room", 1L, 8, 10, uuid);
         Room room = new Room(1L, roomCreateRequest.topicId(), roomCreateRequest.roomName(), roomCreateRequest.maxPeople(), roomCreateRequest.quizCount(), false, "test@example.com");
 
@@ -89,8 +89,9 @@ public class RoomProducerServiceUnitTest {
     void createRoomWrongTopicId() throws InterruptedException {
         // given
         String uuid = "test-uuid";
+        User user = new User(1L, "test@example.com_3002860612", "test@example.com", Role.USER);
 
-        LoginUserRequest loginUserRequest = new LoginUserRequest(1L, "test@example.com", "USER");
+        LoginUserRequest loginUserRequest = new LoginUserRequest(1L, "test@example.com", Role.USER);
         RoomCreateRequest roomCreateRequest1 = new RoomCreateRequest("Test Room", 0L, 8, 5, uuid);
         RoomCreateRequest roomCreateRequest2 = new RoomCreateRequest("Test Room", 5L, 8, 5, uuid);
 
@@ -101,6 +102,7 @@ public class RoomProducerServiceUnitTest {
         given(rLock.isHeldByCurrentThread()).willReturn(true);
         given(roomCreateCacheTemplate.opsForValue()).willReturn(valueOperationsMock);
         given(valueOperationsMock.get(uuid)).willReturn(null);
+        given(userRepository.findById(1L)).willReturn(Optional.of(user));
 
         // when
         // then
@@ -117,8 +119,9 @@ public class RoomProducerServiceUnitTest {
     void createRoomWrongRoomName() throws InterruptedException {
         // given
         String uuid = "test-uuid";
+        User user = new User(1L, "test@example.com_3002860612", "test@example.com", Role.USER);
 
-        LoginUserRequest loginUserRequest = new LoginUserRequest(1L, "test@example.com", "USER");
+        LoginUserRequest loginUserRequest = new LoginUserRequest(1L, "test@example.com", Role.USER);
         RoomCreateRequest roomCreateRequest1 = new RoomCreateRequest("", 4L, 8, 5, uuid);
         RoomCreateRequest roomCreateRequest2 = new RoomCreateRequest(" ", 4L, 8, 5, uuid);
 
@@ -129,6 +132,7 @@ public class RoomProducerServiceUnitTest {
         given(rLock.isHeldByCurrentThread()).willReturn(true);
         given(roomCreateCacheTemplate.opsForValue()).willReturn(valueOperationsMock);
         given(valueOperationsMock.get(uuid)).willReturn(null);
+        given(userRepository.findById(1L)).willReturn(Optional.of(user));
 
         // when
         // then
@@ -145,8 +149,9 @@ public class RoomProducerServiceUnitTest {
     void createRoomWrongRoomNameLess() throws InterruptedException {
         // given
         String uuid = "test-uuid";
+        User user = new User(1L, "test@example.com_3002860612", "test@example.com", Role.USER);
 
-        LoginUserRequest loginUserRequest = new LoginUserRequest(1L, "test@example.com", "USER");
+        LoginUserRequest loginUserRequest = new LoginUserRequest(1L, "test@example.com", Role.USER);
         RoomCreateRequest roomCreateRequest1 = new RoomCreateRequest("test room", 4L, 0, 5, uuid);
         RoomCreateRequest roomCreateRequest2 = new RoomCreateRequest("test room", 4L, 9, 5, uuid);
 
@@ -157,6 +162,7 @@ public class RoomProducerServiceUnitTest {
         given(rLock.isHeldByCurrentThread()).willReturn(true);
         given(roomCreateCacheTemplate.opsForValue()).willReturn(valueOperationsMock);
         given(valueOperationsMock.get(uuid)).willReturn(null);
+        given(userRepository.findById(1L)).willReturn(Optional.of(user));
 
         // when
         // then
@@ -173,8 +179,9 @@ public class RoomProducerServiceUnitTest {
     void createRoomWrongRoomQuizCount() throws InterruptedException {
         // given
         String uuid = "test-uuid";
+        User user = new User(1L, "test@example.com_3002860612", "test@example.com", Role.USER);
 
-        LoginUserRequest loginUserRequest = new LoginUserRequest(1L, "test@example.com", "USER");
+        LoginUserRequest loginUserRequest = new LoginUserRequest(1L, "test@example.com", Role.USER);
         RoomCreateRequest roomCreateRequest1 = new RoomCreateRequest("test room", 4L, 1, 0, uuid);
         RoomCreateRequest roomCreateRequest2 = new RoomCreateRequest("test room", 4L, 8, 11, uuid);
 
@@ -185,6 +192,7 @@ public class RoomProducerServiceUnitTest {
         given(rLock.isHeldByCurrentThread()).willReturn(true);
         given(roomCreateCacheTemplate.opsForValue()).willReturn(valueOperationsMock);
         given(valueOperationsMock.get(uuid)).willReturn(null);
+        given(userRepository.findById(1L)).willReturn(Optional.of(user));
 
         // when
         // then
@@ -195,4 +203,18 @@ public class RoomProducerServiceUnitTest {
                 .isInstanceOf(GeneralErrorException.class)
                 .hasMessage("잘못된 입력입니다. 최대 문제수는 10문제입니다.");
     }
+
+    @Test
+    @DisplayName("로그인하지 않은 유저가 방 생성 요청 보냈을 때 예외를 발생시킨다.")
+    void noLoginUserDoNotEnterRoom() {
+        String uuid = "test-uuid";
+        RoomCreateRequest roomCreateRequest = new RoomCreateRequest("Test Room", 1L, 8, 10, uuid);
+
+        assertThatThrownBy(() -> roomProducerService.createRoom(roomCreateRequest, null))
+                .isInstanceOf(GeneralErrorException.class)
+                .hasMessage("로그인 해주세요.");
+    }
+
+    // 저장한 게임과 요청 보낸 유저의 이메일이 같은지 테스트
+    //
 }
