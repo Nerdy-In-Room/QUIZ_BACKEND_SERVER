@@ -51,6 +51,6 @@ public class JwtUtil {
         String email = decodedJWT.getClaim("email").asString();
         Role role = decodedJWT.getClaim("roles").as(Role.class);
 
-        return new LoginUserRequest(userId, email, role.name());
+        return new LoginUserRequest(userId, email, role);
     }
 }

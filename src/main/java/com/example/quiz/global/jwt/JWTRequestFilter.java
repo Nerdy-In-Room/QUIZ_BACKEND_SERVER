@@ -2,6 +2,7 @@ package com.example.quiz.global.jwt;
 
 
 import com.auth0.jwt.exceptions.JWTVerificationException;
+import com.example.quiz.global.type.Role;
 import com.example.quiz.user.dto.request.LoginUserRequest;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -63,7 +64,7 @@ public class JWTRequestFilter extends OncePerRequestFilter {
         try {
             String token = URLDecoder.decode(cookie.getValue(), StandardCharsets.UTF_8).split(" ")[1];
             LoginUserRequest loginUserRequest = JwtUtil.verifyToken(token);
-            String role = loginUserRequest.role();
+            Role role = loginUserRequest.role();
             List<SimpleGrantedAuthority> authorities = List.of(new SimpleGrantedAuthority("ROLE_" + role));
 
             UsernamePasswordAuthenticationToken authenticationToken =

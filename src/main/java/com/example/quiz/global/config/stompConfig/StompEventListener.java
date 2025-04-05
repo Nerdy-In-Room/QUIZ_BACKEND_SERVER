@@ -45,7 +45,7 @@ public class StompEventListener {
 
     private final RedisEventPublisher redisEventPublisher;
     private final Map<Long, AtomicInteger> roomSubscriptionCount;
-    private final RedisTemplate<String, Integer> roomOccupancyCacheTemplate;
+    private final RedisTemplate<String, Integer> roomPeopleCacheTemplate;
     private final RedisTemplate<String, Long> alreadyInGameUserCacheTemplate;
 
     @EventListener
@@ -98,7 +98,7 @@ public class StompEventListener {
         gameRepository.save(game);
     }
 
-    public void updateRoomSubscriptionCount(Long roomId) {
+    private void updateRoomSubscriptionCount(Long roomId) {
         AtomicInteger count = roomSubscriptionCount.get(roomId);
 
         if (count == null) {
@@ -111,7 +111,7 @@ public class StompEventListener {
                 throw new RuntimeException("방 인원 음수가 될 수 없습니다.: " + roomId);
             }
 
-            roomOccupancyCacheTemplate.opsForValue().decrement(ROOM_ID_PREFIX + roomId);
+            roomPeopleCacheTemplate.opsForValue().decrement(ROOM_ID_PREFIX + roomId);
 
             return current - 1;
         });
@@ -120,14 +120,14 @@ public class StompEventListener {
             cleanUpEmptyRoom(roomId);
         }
 
-        redisEventPublisher.publishChangeCurrentOccupancies(REDIS_PUBLISH_CHANNEL, new ChangeCurrentPeople(roomId, currentCount));
+        redisEventPublisher.publishChangeCurrentPeople(REDIS_PUBLISH_CHANNEL, new ChangeCurrentPeople(roomId, currentCount));
     }
 
     private void cleanUpEmptyRoom(Long roomId) {
         roomSubscriptionCount.remove(roomId);
         roomRepository.findById(roomId).ifPresent(Room::removeStatus);
         gameRepository.removeById(String.valueOf(roomId));
-        roomOccupancyCacheTemplate.delete(ROOM_ID_PREFIX + roomId);
+        roomPeopleCacheTemplate.delete(ROOM_ID_PREFIX + roomId);
     }
 
     private InGameUser findUser(long userId, long roomId) {
