@@ -31,6 +31,7 @@ public class User {
         this.role = role;
     }
 
+
     public void changeUserName(String username) {
         this.username = username;
     }

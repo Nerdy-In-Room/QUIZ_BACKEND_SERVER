@@ -137,12 +137,12 @@ public class GameService {
     }
 
     // topic Id 맞게 중복되지 않는 Quiz 반환
-    public Quiz selectRandomQuiz(Long roomId, Long topicId) {
+    private Quiz selectRandomQuiz(Long roomId, Long topicId) {
         roomQuizMap.putIfAbsent(roomId, new ArrayList<>());
         List<Long> usedQuizIds = roomQuizMap.get(roomId);
 
         List<Quiz> allQuizzes = quizRepository.findAllByTopicId(topicId);
-        List<Quiz> availableQuizzes = quizRepository.findAllByTopicId(topicId).stream()
+        List<Quiz> availableQuizzes = allQuizzes.stream()
                 .filter(quiz -> !usedQuizIds.contains(quiz.getQuizId()))
                 .toList();
 
