@@ -14,7 +14,7 @@ import org.mapstruct.factory.Mappers;
 
 import java.util.Set;
 
-@Mapper
+@Mapper(componentModel = "spring")
 public interface RoomMapper {
     RoomMapper INSTANCE = Mappers.getMapper(RoomMapper.class);
 

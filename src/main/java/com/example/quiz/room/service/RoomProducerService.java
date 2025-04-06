@@ -1,5 +1,7 @@
 package com.example.quiz.room.service;
 
+import com.example.quiz.global.exception.general.GeneralErrorCode;
+import com.example.quiz.global.exception.general.GeneralErrorException;
 import com.example.quiz.global.type.Role;
 import com.example.quiz.game.entity.Game;
 import com.example.quiz.game.model.InGameUser;
@@ -40,14 +42,15 @@ public class RoomProducerService {
     private final String ROOM_CREATE_LOCK_PREFIX = "room:create:";
 
     private final RedissonClient redissonClient;
-    private final RedisTemplate<String, Integer> roomOccupancyCacheTemplate;
+    private final RedisTemplate<String, Integer> roomPeopleCacheTemplate;
     private final RedisTemplate<String, RoomResponse> roomCreateCacheTemplate;
 
     public RoomResponse createRoom(RoomCreateRequest roomRequest, LoginUserRequest loginUserRequest) {
+        User user = findUser(loginUserRequest);
         RoomResponse roomResponse = null;
         String lockKey = ROOM_CREATE_LOCK_PREFIX + roomRequest.UUID();
-
         RLock lock = redissonClient.getLock(lockKey);
+
         try {
             if (lock.tryLock(5, 10, TimeUnit.SECONDS)) {
                 roomResponse = roomCreateCacheTemplate.opsForValue().get(roomRequest.UUID());
@@ -58,7 +61,7 @@ public class RoomProducerService {
                 }
 
                 Room savedRoom = saveRoom(roomRequest, loginUserRequest);
-                createGameWithMasterUser(savedRoom.getRoomId(), loginUserRequest);
+                createGameWithMasterUser(savedRoom.getRoomId(), user);
 
                 roomResponse = RoomMapper.INSTANCE.RoomToRoomResponse(savedRoom);
                 roomCreateCacheTemplate.opsForValue().set(roomRequest.UUID(), roomResponse, 1, TimeUnit.MINUTES);
@@ -82,17 +85,25 @@ public class RoomProducerService {
         return new PageImpl<>(responses, pageable, responses.size());
     }
 
-    private InGameUser findUser(long roomId, LoginUserRequest loginUserRequest) {
-        User user = userRepository.findById(loginUserRequest.userId()).orElseThrow();
+    private User findUser(LoginUserRequest loginUserRequest) {
+        if (loginUserRequest == null) {
 
-        return new InGameUser(user.getId(), roomId, user.getEmail(), Role.ADMIN, false);
+            throw new GeneralErrorException(GeneralErrorCode.USER_NOT_FOUND);
+        }
+
+        return userRepository.findById(loginUserRequest.userId()).orElseThrow(() -> new GeneralErrorException(GeneralErrorCode.USER_NOT_FOUND));
+    }
+
+    private InGameUser createInGameUser(long roomId, User loginUser) {
+
+        return new InGameUser(loginUser.getId(), roomId, loginUser.getEmail(), Role.ADMIN, false);
     }
 
     private List<RoomListResponse> getRoomList(Pageable pageable) {
         return roomRepository.findAllByRemoveStatus(false, pageable)
                 .stream()
                 .map(room -> {
-                    Integer currentPeople = roomOccupancyCacheTemplate.opsForValue().get(ROOM_ID_PREFIX + room.getRoomId());
+                    Integer currentPeople = roomPeopleCacheTemplate.opsForValue().get(ROOM_ID_PREFIX + room.getRoomId());
 
                     return currentPeople != null
                             ? RoomMapper.INSTANCE.RoomToRoomListResponse(room, currentPeople)
@@ -103,6 +114,7 @@ public class RoomProducerService {
     }
 
     private Room saveRoom(RoomCreateRequest roomRequest, LoginUserRequest loginUserRequest) {
+        RoomCreateValidation.validateTopicId(roomRequest.topicId());
         RoomCreateValidation.validateRoomName(roomRequest.roomName());
         RoomCreateValidation.validateMaxPeople(roomRequest.maxPeople());
         RoomCreateValidation.validateQuizCount(roomRequest.quizCount());
@@ -112,8 +124,8 @@ public class RoomProducerService {
         return roomRepository.save(room);
     }
 
-    private void createGameWithMasterUser(Long roomId, LoginUserRequest loginUserRequest) {
-        InGameUser masterUser = findUser(roomId, loginUserRequest);
+    private void createGameWithMasterUser(Long roomId, User loginUser) {
+        InGameUser masterUser = createInGameUser(roomId, loginUser);
         Game game = new Game(String.valueOf(roomId), roomId, 1, false, new HashSet<>());
         game.getGameUser().add(masterUser);
         gameRepository.save(game);

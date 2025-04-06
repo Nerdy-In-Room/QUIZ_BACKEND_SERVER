@@ -15,7 +15,7 @@ public class GeneralErrorException extends CustomErrorException {
     }
 
     public GeneralErrorException(GeneralErrorCode errorCode, Object additionalData) {
-        super(errorCode.getMessage() + " (" + additionalData + ")", errorCode);
+        super(errorCode.getMessage() + " " + additionalData, errorCode);
         this.errorCode = errorCode;
         this.additionalData = additionalData;
     }
