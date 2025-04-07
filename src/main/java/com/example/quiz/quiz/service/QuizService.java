@@ -47,7 +47,7 @@ public class QuizService {
 
     private final SimpMessagingTemplate messagingTemplate;
 
-    public QuizRoomEnterResponse enterGameRoom(long roomId, LoginUserRequest loginUserRequest) {
+    public QuizRoomEnterResponse enterQuizRoom(long roomId, LoginUserRequest loginUserRequest) {
         User user = findUser(loginUserRequest);
         Room room = findRoomById(roomId);
         InGameUser inGameUser = findInGameUser(roomId, loginUserRequest);
@@ -59,17 +59,18 @@ public class QuizService {
     }
 
     @Transactional
-    public void sendQuiz(String roomId) {
+    public void startQuiz(String roomId) {
         Room room = roomRepository.findById(Long.valueOf(roomId)).orElseThrow(() -> new RoomErrorException(RoomErrorCode.NOT_FOUND_ROOM, "Room ID: " + roomId));
         Quiz quiz = selectRandomQuiz(Long.parseLong(roomId), room.getTopicId());
 
         remainQuizMap.merge(Long.parseLong(roomId), 1, (oldValue, newValue) -> oldValue - 1);
-        makeGame(Long.parseLong(roomId));
+        initializeGameOnQuizEnd(Long.parseLong(roomId));
 
         messagingTemplate.convertAndSend("/pub/quiz/" + roomId, new ResponseQuiz(quiz.getProblem(), quiz.getCorrectAnswer(), quiz.getDescription()));
     }
 
-    private void makeGame(Long roomId) {
+    // 마지막 라운드 시작시 게임방 생성
+    private void initializeGameOnQuizEnd(Long roomId) {
         if (remainQuizMap.get(roomId) == 0) {
             roomRepository.findById(roomId).ifPresent(Room::removeStatus);
             Game game = new Game(String.valueOf(roomId), roomId, 0, false, new HashSet<>());

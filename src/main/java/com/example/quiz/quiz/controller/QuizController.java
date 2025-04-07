@@ -1,6 +1,5 @@
 package com.example.quiz.quiz.controller;
 
-import com.example.quiz.game.service.GameService;
 import com.example.quiz.global.config.auth.annotation.user.LoginUser;
 import com.example.quiz.quiz.dto.request.RequestAnswer;
 import com.example.quiz.quiz.service.QuizService;
@@ -25,8 +24,8 @@ public class QuizController {
     private final QuizService quizService;
 
     @MessageMapping("/{id}/send")
-    public void sendQuiz(@DestinationVariable String id){
-        quizService.sendQuiz(id);
+    public void startQuiz(@DestinationVariable String id){
+        quizService.startQuiz(id);
     }
 
     @MessageMapping("/{id}/check")
@@ -35,8 +34,8 @@ public class QuizController {
     }
 
     @GetMapping("/quiz/{roomId}")
-    public ModelAndView enterGameRoom(@PathVariable Long roomId, @LoginUser LoginUserRequest loginUserRequest) {
-        QuizRoomEnterResponse quizRoomEnterResponse = quizService.enterGameRoom(roomId, loginUserRequest);
+    public ModelAndView enterQuizRoom(@PathVariable Long roomId, @LoginUser LoginUserRequest loginUserRequest) {
+        QuizRoomEnterResponse quizRoomEnterResponse = quizService.enterQuizRoom(roomId, loginUserRequest);
         Map<String, Object> map = new HashMap<>();
         map.put("responseQuiz", quizRoomEnterResponse);
 
