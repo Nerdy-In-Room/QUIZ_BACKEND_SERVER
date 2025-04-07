@@ -104,14 +104,6 @@ public class RoomService {
         throw new RoomErrorException(RoomErrorCode.FAIL_ENTER_ROOM, roomId + " 방 입장에 실패했습니다.");
     }
 
-    public QuizRoomEnterResponse enterQuizRoom(long roomId, LoginUserRequest loginUserRequest) {
-        User user = findUser(loginUserRequest);
-        Room room = findRoomById(roomId);
-        InGameUser inGameUser = findInGameUser(roomId, loginUserRequest);
-
-        return RoomMapper.INSTANCE.RoomToQuizRoomEnterResponse(inGameUser, user, room);
-    }
-
     @Transactional
     public RoomModifyResponse modifyRoom(RoomModifyRequest request, long roomId, LoginUserRequest loginUserRequest) {
         Room room = findRoomById(roomId);

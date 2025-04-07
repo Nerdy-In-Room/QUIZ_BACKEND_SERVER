@@ -65,15 +65,6 @@ public class RoomController {
         return new ModelAndView("room", map);
     }
 
-    @GetMapping("/quiz/{roomId}")
-    public ModelAndView enterQuizRoom(@PathVariable Long roomId, @LoginUser LoginUserRequest loginUserRequest) {
-        QuizRoomEnterResponse quizRoomEnterResponse = roomService.enterQuizRoom(roomId, loginUserRequest);
-        Map<String, Object> map = new HashMap<>();
-        map.put("responseQuiz", quizRoomEnterResponse);
-
-        return new ModelAndView("quiz", map);
-    }
-
     @ResponseBody
     @PatchMapping("/room/{roomId}")
     public ResponseEntity<RoomModifyResponse> modifyRoom(@PathVariable Long roomId, RoomModifyRequest request, @LoginUser LoginUserRequest loginUserRequest) {
