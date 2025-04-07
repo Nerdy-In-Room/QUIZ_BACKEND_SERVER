@@ -22,17 +22,16 @@ import java.util.Map;
 @RequiredArgsConstructor
 @RestController
 public class QuizController {
-    private final GameService gameService;
     private final QuizService quizService;
 
     @MessageMapping("/{id}/send")
     public void sendQuiz(@DestinationVariable String id){
-        gameService.sendQuiz(id);
+        quizService.sendQuiz(id);
     }
 
     @MessageMapping("/{id}/check")
     public void checkQuiz(@DestinationVariable String id, RequestAnswer requestAnswer){
-        gameService.checkAnswer(id, requestAnswer);
+        quizService.checkAnswer(id, requestAnswer);
     }
 
     @GetMapping("/quiz/{roomId}")
