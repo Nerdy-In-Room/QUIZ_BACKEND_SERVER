@@ -10,6 +10,7 @@ import com.example.quiz.quiz.dto.request.RequestAnswer;
 import com.example.quiz.quiz.dto.response.ResponseReadyGame;
 import com.example.quiz.quiz.entity.Quiz;
 import com.example.quiz.quiz.repository.QuizRepository;
+import com.example.quiz.quiz.service.QuizService;
 import com.example.quiz.room.entity.Room;
 import com.example.quiz.room.repository.RoomRepository;
 import com.example.quiz.user.entity.User;
@@ -46,6 +47,8 @@ class GameServiceTest {
     private SimpMessagingTemplate messagingTemplate;
     @InjectMocks
     private GameService gameService;
+    @InjectMocks
+    private QuizService quizService;
 
     @BeforeEach
     void setUp() {
@@ -62,7 +65,7 @@ class GameServiceTest {
 
         // when & then
         assertThatThrownBy(() -> {
-            gameService.checkAnswer(roomId, new RequestAnswer(userId, emptyAnswer, false));
+            quizService.checkAnswer(roomId, new RequestAnswer(userId, emptyAnswer, false));
         })
                 .isInstanceOf(GameErrorException.class)
                 .hasMessage("정답을 입력해주세요.");
@@ -127,7 +130,7 @@ class GameServiceTest {
         // when
         Set<String> quizzes = new HashSet<>();
         for (int i = 0; i < numberOfQuestions; i++) {
-            gameService.sendQuiz(String.valueOf(room.getRoomId()));
+            quizService.startQuiz(String.valueOf(room.getRoomId()));
             ArgumentCaptor<ResponseQuiz> captor = ArgumentCaptor.forClass(ResponseQuiz.class);
             verify(messagingTemplate, atLeastOnce()).convertAndSend(eq("/pub/quiz/" + roomId), captor.capture());
             quizzes.add(captor.getValue().problem());

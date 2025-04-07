@@ -39,7 +39,6 @@ public class GameService {
     private static final Map<Long, Integer> remainQuizMap = new ConcurrentHashMap<>();
 
     private final GameRepository gameRepository;
-    private final QuizRepository quizRepository;
     private final RoomRepository roomRepository;
     private final UserRepository userRepository;
 
