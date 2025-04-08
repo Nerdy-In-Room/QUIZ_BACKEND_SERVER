@@ -115,7 +115,7 @@ public class RoomProducerServiceUnitTest {
     }
 
     @Test
-    @DisplayName("잘못된 방 이름가 입력으로 들어왔을 때 예외 테스트한다.")
+    @DisplayName("잘못된 방 이름이 입력으로 들어왔을 때 예외 테스트한다.")
     void createRoomWrongRoomName() throws InterruptedException {
         // given
         String uuid = "test-uuid";
@@ -214,7 +214,4 @@ public class RoomProducerServiceUnitTest {
                 .isInstanceOf(GeneralErrorException.class)
                 .hasMessage("로그인 해주세요.");
     }
-
-    // 저장한 게임과 요청 보낸 유저의 이메일이 같은지 테스트
-    //
 }

@@ -6,7 +6,7 @@ import com.example.quiz.game.repository.GameRepository;
 import com.example.quiz.global.config.cacheConfig.redis.RedisEventPublisher;
 import com.example.quiz.global.type.Role;
 import com.example.quiz.room.entity.Room;
-import com.example.quiz.room.model.ChangeCurrentPeople;
+import com.example.quiz.room.dto.response.ChangeCurrentPeopleResponse;
 import com.example.quiz.room.repository.RoomRepository;
 import com.example.quiz.user.dto.request.LoginUserRequest;
 import com.example.quiz.user.entity.User;
@@ -203,7 +203,7 @@ class StompEventListenerIntegrationTest {
 
         verify(redisEventPublisher, times(3)).publishChangeCurrentPeople(
                 eq("change-roomList-channel"),
-                any(ChangeCurrentPeople.class)
+                any(ChangeCurrentPeopleResponse.class)
         );
     }
 }

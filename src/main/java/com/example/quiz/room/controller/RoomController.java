@@ -42,7 +42,7 @@ public class RoomController {
 
         String roomIds = roomListResponses.stream()
                 .map(RoomListResponse::roomId).map(String::valueOf).collect(
-                Collectors.joining(","));
+                        Collectors.joining(","));
         map.put("roomList", roomListResponses);
         map.put("roomIds", roomIds);
 

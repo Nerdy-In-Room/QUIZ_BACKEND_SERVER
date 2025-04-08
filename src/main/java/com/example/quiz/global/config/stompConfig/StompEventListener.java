@@ -12,7 +12,7 @@ import com.example.quiz.global.exception.general.GeneralErrorException;
 import com.example.quiz.room.entity.Room;
 import com.example.quiz.room.exception.RoomErrorCode;
 import com.example.quiz.room.exception.RoomErrorException;
-import com.example.quiz.room.model.ChangeCurrentPeople;
+import com.example.quiz.room.dto.response.ChangeCurrentPeopleResponse;
 import com.example.quiz.room.repository.RoomRepository;
 import com.example.quiz.user.dto.request.LoginUserRequest;
 import com.example.quiz.user.entity.User;
@@ -120,7 +120,7 @@ public class StompEventListener {
             cleanUpEmptyRoom(roomId);
         }
 
-        redisEventPublisher.publishChangeCurrentPeople(REDIS_PUBLISH_CHANNEL, new ChangeCurrentPeople(roomId, currentCount));
+        redisEventPublisher.publishChangeCurrentPeople(REDIS_PUBLISH_CHANNEL, new ChangeCurrentPeopleResponse(roomId, currentCount, System.currentTimeMillis()));
     }
 
     private void cleanUpEmptyRoom(Long roomId) {

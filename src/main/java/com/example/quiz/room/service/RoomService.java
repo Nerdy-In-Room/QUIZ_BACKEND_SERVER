@@ -19,7 +19,7 @@ import com.example.quiz.room.entity.Room;
 import com.example.quiz.room.exception.RoomErrorCode;
 import com.example.quiz.room.exception.RoomErrorException;
 import com.example.quiz.room.mapper.RoomMapper;
-import com.example.quiz.room.model.ChangeCurrentPeople;
+import com.example.quiz.room.dto.response.ChangeCurrentPeopleResponse;
 import com.example.quiz.room.repository.RoomRepository;
 import com.example.quiz.room.validation.RoomCreateValidation;
 import com.example.quiz.user.dto.request.LoginUserRequest;
@@ -27,7 +27,6 @@ import com.example.quiz.user.entity.User;
 import com.example.quiz.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.redisson.api.RedissonClient;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
@@ -49,13 +48,11 @@ public class RoomService {
     private final RoomLockManager roomLockManager;
 
     private final int INIT_ROOM_PEOPLE = 1;
-    private final String LOCK_PREFIX = "LOCK:";
     private final String ROOM_ID_PREFIX = "roomId:";
     private final String USER_ID_PREFIX = "userId:";
     private final String REDIS_CREATE_ROOM_CHANNEL = "create-room-channel";
     private final String REDIS_CHANGE_ROOM_LIST_CHANNEL = "change-roomList-channel";
 
-    private final RedissonClient redissonClient;
     private final RedisEventPublisher redisEventPublisher;
     private final Map<Long, AtomicInteger> roomSubscriptionCount;
     private final RedisTemplate<String, Integer> roomPeopleCacheTemplate;
@@ -243,6 +240,6 @@ public class RoomService {
     }
 
     private void publishChangeCurrentOccupancies(long roomId, int currentCount) {
-        redisEventPublisher.publishChangeCurrentPeople(REDIS_CHANGE_ROOM_LIST_CHANNEL, new ChangeCurrentPeople(roomId, currentCount));
+        redisEventPublisher.publishChangeCurrentPeople(REDIS_CHANGE_ROOM_LIST_CHANNEL, new ChangeCurrentPeopleResponse(roomId, currentCount, System.currentTimeMillis()));
     }
 }
