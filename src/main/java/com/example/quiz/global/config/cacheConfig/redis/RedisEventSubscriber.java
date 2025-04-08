@@ -1,7 +1,7 @@
 package com.example.quiz.global.config.cacheConfig.redis;
 
-import com.example.quiz.room.model.ChangeCurrentPeople;
 import com.example.quiz.room.dto.response.RoomResponse;
+import com.example.quiz.room.dto.response.ChangeCurrentPeopleResponse;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
@@ -9,6 +9,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Component;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -23,7 +25,7 @@ public class RedisEventSubscriber {
     private ScheduledFuture<?> scheduledFuture;
     private final AtomicBoolean isProcessing = new AtomicBoolean(false);
     private final ScheduledExecutorService scheduledExecutorService = Executors.newSingleThreadScheduledExecutor();
-    private final BlockingQueue<ChangeCurrentPeople> changeCurrentPeopleQueue = new ArrayBlockingQueue<>(MAX_QUEUE_SIZE);
+    private final BlockingQueue<ChangeCurrentPeopleResponse> changeCurrentPeopleQueue = new ArrayBlockingQueue<>(MAX_QUEUE_SIZE);
 
     public void createRoomEvent(String message) throws JsonProcessingException {
         RoomResponse roomResponse = new ObjectMapper().readValue(message, RoomResponse.class);
@@ -32,7 +34,7 @@ public class RedisEventSubscriber {
 
     public void changeCurrentPeople(String message) {
         try {
-            ChangeCurrentPeople event = new ObjectMapper().readValue(message, ChangeCurrentPeople.class);
+            ChangeCurrentPeopleResponse event = new ObjectMapper().readValue(message, ChangeCurrentPeopleResponse.class);
 
             changeCurrentPeopleQueue.remove(event);
             changeCurrentPeopleQueue.put(event);
@@ -61,7 +63,8 @@ public class RedisEventSubscriber {
     }
 
     private void broadcastOccupancy() {
-        messagingTemplate.convertAndSend("/pub/occupancy", changeCurrentPeopleQueue);
-        changeCurrentPeopleQueue.clear();
+        List<ChangeCurrentPeopleResponse> response = new ArrayList<>();
+        changeCurrentPeopleQueue.drainTo(response);
+        messagingTemplate.convertAndSend("/pub/occupancy", response);
     }
 }
