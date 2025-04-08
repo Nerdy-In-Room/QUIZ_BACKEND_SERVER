@@ -1,6 +1,6 @@
 package com.example.quiz.room.service;
 
-import com.example.quiz.config.RedissonTestConfig;
+import com.example.quiz.helper.RedissonTestConfig;
 import com.example.quiz.game.repository.GameRepository;
 import com.example.quiz.global.type.Role;
 import com.example.quiz.room.dto.request.RoomCreateRequest;

@@ -35,6 +35,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
@@ -79,6 +80,30 @@ class RoomServiceIntegrationTest {
     }
 
     @Test
+    @DisplayName("방을 만든 후 생성된 방 정보가 브로드캐스팅된다.")
+    void broadcastingInitRoom() {
+        // given
+        User master = userRepository.save(new User("master1", "email1", Role.ADMIN));
+        long roomId = roomProducerService.createRoom(new RoomCreateRequest("room1", 1L, 8, 8, "1"), new LoginUserRequest(master.getId(), "email1", Role.ADMIN)).roomId();
+        LoginUserRequest loginUserRequest = new LoginUserRequest(master.getId(), master.getEmail(), Role.ADMIN);
+
+        // when
+        RoomEnterResponse roomEnterResponse = roomService.enterRoom(roomId, loginUserRequest, "master");
+
+        // then
+        ArgumentCaptor<InGameUser> captor = ArgumentCaptor.forClass(InGameUser.class);
+
+        verify(simpMessagingTemplate, times(1))
+                .convertAndSend(eq("/pub/room/" + roomId), captor.capture());
+
+        InGameUser captured = captor.getValue();
+        assertEquals(master.getId(), captured.getId());
+        assertEquals(roomId, captured.getRoomId());
+        assertEquals(1, roomEnterResponse.participants().size());
+        assertEquals(roomId, roomEnterResponse.inGameUser().getRoomId());
+    }
+
+    @Test
     @DisplayName("최대인원보다 현재인원이 적을 경우 방에 입장할 수 있다.")
     void enterRoom() {
         // given
@@ -104,7 +129,8 @@ class RoomServiceIntegrationTest {
         assertEquals(user.getId(), captured.getId());
         assertEquals(roomId, captured.getRoomId());
         assertEquals(2, roomEnterResponse.participants().size());
-        assertEquals(roomId, roomEnterResponse.inGameUser().getRoomId());;
+        assertEquals(roomId, roomEnterResponse.inGameUser().getRoomId());
+        ;
     }
 
     @Test

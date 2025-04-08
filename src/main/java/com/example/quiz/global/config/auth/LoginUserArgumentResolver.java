@@ -1,6 +1,8 @@
 package com.example.quiz.global.config.auth;
 
 import com.example.quiz.global.config.auth.annotation.user.LoginUser;
+import com.example.quiz.global.exception.general.GeneralErrorCode;
+import com.example.quiz.global.exception.general.GeneralErrorException;
 import com.example.quiz.user.dto.request.LoginUserRequest;
 import org.springframework.core.MethodParameter;
 import org.springframework.security.core.Authentication;
@@ -25,7 +27,7 @@ public class LoginUserArgumentResolver implements HandlerMethodArgumentResolver 
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
         if (authentication == null || !authentication.isAuthenticated()) {
-            throw new IllegalStateException("error authentication");
+            throw new GeneralErrorException(GeneralErrorCode.USER_NOT_FOUND);
         }
 
         Object principal = authentication.getPrincipal();

@@ -1,4 +1,4 @@
-package com.example.quiz.room.model;
+package com.example.quiz.room.dto.response;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.AllArgsConstructor;
@@ -11,19 +11,20 @@ import java.util.Objects;
 @AllArgsConstructor
 @NoArgsConstructor
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class ChangeCurrentPeople {
+public class ChangeCurrentPeopleResponse {
     long roomId;
     int currentPeople;
+    long version;
 
     @Override
-    public boolean equals(Object object) {
-        if (object == null || getClass() != object.getClass()) return false;
-        ChangeCurrentPeople that = (ChangeCurrentPeople) object;
-        return roomId == that.roomId;
+    public boolean equals(Object o) {
+        if (o == null || getClass() != o.getClass()) return false;
+        ChangeCurrentPeopleResponse that = (ChangeCurrentPeopleResponse) o;
+        return getRoomId() == that.getRoomId();
     }
 
     @Override
     public int hashCode() {
-        return Objects.hashCode(roomId);
+        return Objects.hashCode(getRoomId());
     }
 }

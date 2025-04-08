@@ -1,4 +1,4 @@
-package com.example.quiz.config;
+package com.example.quiz.helper;
 
 import org.redisson.Redisson;
 import org.redisson.api.RedissonClient;
