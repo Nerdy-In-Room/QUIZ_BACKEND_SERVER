@@ -196,4 +196,20 @@ public class QuizService {
 
         return new InGameUser(loginUserRequest.userId(), roomId, user.getEmail(), Role.USER, false);
     }
+    // 테스트 코드에 활용
+    void setRemainQuizCount(Long roomId, Integer count) {
+        remainQuizMap.put(roomId, count);
+    }
+
+    Integer getRemainQuizCount(Long roomId) {
+        return remainQuizMap.get(roomId);
+    }
+
+    void setRoomQuizCount(Long roomId, List<Long> list) {
+        roomQuizMap.putIfAbsent(roomId, list);
+    }
+
+//    Integer getRoomQuizCount(Long roomId) {
+//        return roomQuizMap.get(roomId);
+//    }
 }
