@@ -1,8 +1,8 @@
 package com.example.quiz.room.service;
 
-import com.example.quiz.helper.RedissonTestConfig;
 import com.example.quiz.game.repository.GameRepository;
 import com.example.quiz.global.type.Role;
+import com.example.quiz.helper.RedissonTestConfig;
 import com.example.quiz.room.dto.request.RoomCreateRequest;
 import com.example.quiz.room.dto.response.RoomListResponse;
 import com.example.quiz.room.dto.response.RoomResponse;
@@ -17,7 +17,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.redisson.api.RLock;
 import org.redisson.api.RedissonClient;
@@ -37,7 +36,6 @@ import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.when;
 
 @Slf4j
 @SpringBootTest
@@ -58,9 +56,6 @@ class RoomProducerServiceIntegrationTest {
     private RedisTemplate<String, Integer> roomPeopleCacheTemplate;
     @Autowired
     private RoomProducerService roomProducerService;
-
-    @Mock
-    private RLock lock;
     @Autowired
     private RedissonClient redissonClient;
 
@@ -81,15 +76,12 @@ class RoomProducerServiceIntegrationTest {
 
     @Test
     @DisplayName("입력이 올바를 때 방이 생성되는지 테스트한다.")
-    void createRoomTest() throws InterruptedException {
+    void createRoomTest() {
         // given
         String uuid = "test-uuid";
         RoomCreateRequest roomCreateRequest = new RoomCreateRequest("Test Room", 1L, 8, 5, uuid);
         LoginUserRequest loginUserRequest = new LoginUserRequest(1L, "test@example.com", Role.USER);
         userRepository.save(new User(1L, "test@example.com_3002860612", "test@example.com", Role.USER));
-
-        when(lock.tryLock(5, 10, TimeUnit.SECONDS)).thenReturn(true);
-        when(lock.isHeldByCurrentThread()).thenReturn(true);
 
         // when
         RoomResponse createdRoom = roomProducerService.createRoom(roomCreateRequest, loginUserRequest);
@@ -103,7 +95,7 @@ class RoomProducerServiceIntegrationTest {
 
     @Test
     @DisplayName("락을 얻지 못했을 때 null 반환하는지 테스트한다.")
-    void testCreateRoom_LockNotAcquired() throws InterruptedException {
+    void testCreateRoomLockNotAcquired() {
         // given
         String uuid = "test-uuid";
         RoomCreateRequest roomCreateRequest = new RoomCreateRequest("Test Room", 1L, 8, 5, uuid);
@@ -115,7 +107,6 @@ class RoomProducerServiceIntegrationTest {
             rLock.lock(15, TimeUnit.SECONDS);
             log.info("lock : {}", rLock.isLocked());
         }).start();
-        Thread.sleep(1);
 
         // when
         RoomResponse actualResponse = roomProducerService.createRoom(roomCreateRequest, loginUserRequest);
@@ -126,7 +117,7 @@ class RoomProducerServiceIntegrationTest {
 
     @Test
     @DisplayName("방 중복 생성 요청이 됐을 때 생성된 방을 반환하는지 테스트한다.")
-    void testCreateRoom_CacheHit() {
+    void testCreateRoomCacheHit() {
         // given
         String uuid = "test-uuid";
         RoomCreateRequest roomCreateRequest = new RoomCreateRequest("Test Room", 1L, 8, 5, uuid);
@@ -186,13 +177,13 @@ class RoomProducerServiceIntegrationTest {
 
         latch.await();
 
+        // then
         assertThat(results).hasSize(2);
         assertThat(results.get(0)).isNotNull();
         assertThat(results.get(1)).isNotNull();
         assertThat(results.get(0).roomId()).isNotEqualTo(results.get(1).roomId());
 
         long diff = Math.abs(startTimes.get(0) - startTimes.get(1));
-        log.info("diff: {}", diff);
         assertThat(diff).isLessThan(100);
     }
 
