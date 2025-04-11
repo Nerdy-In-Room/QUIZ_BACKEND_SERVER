@@ -11,7 +11,7 @@ import com.example.quiz.global.exception.general.GeneralErrorCode;
 import com.example.quiz.global.exception.general.GeneralErrorException;
 import com.example.quiz.global.type.Role;
 import com.example.quiz.room.dto.request.RoomModifyRequest;
-import com.example.quiz.room.dto.response.QuizRoomEnterResponse;
+import com.example.quiz.room.dto.response.ChangeCurrentPeopleResponse;
 import com.example.quiz.room.dto.response.RoomEnterResponse;
 import com.example.quiz.room.dto.response.RoomModifyResponse;
 import com.example.quiz.room.dto.response.RoomResponse;
@@ -19,7 +19,6 @@ import com.example.quiz.room.entity.Room;
 import com.example.quiz.room.exception.RoomErrorCode;
 import com.example.quiz.room.exception.RoomErrorException;
 import com.example.quiz.room.mapper.RoomMapper;
-import com.example.quiz.room.dto.response.ChangeCurrentPeopleResponse;
 import com.example.quiz.room.repository.RoomRepository;
 import com.example.quiz.room.validation.RoomCreateValidation;
 import com.example.quiz.user.dto.request.LoginUserRequest;
@@ -47,7 +46,7 @@ public class RoomService {
     private final SimpMessagingTemplate simpMessagingTemplate;
     private final RoomLockManager roomLockManager;
 
-    private final int INIT_ROOM_PEOPLE = 1;
+    private final int INIT_ROOM_PEOPLE = 0;
     private final String ROOM_ID_PREFIX = "roomId:";
     private final String USER_ID_PREFIX = "userId:";
     private final String REDIS_CREATE_ROOM_CHANNEL = "create-room-channel";
@@ -151,28 +150,24 @@ public class RoomService {
     }
 
     private int incrementSubscriptionCount(Long roomId, Long userId, int maxUser) {
-        if (!roomSubscriptionCount.containsKey(roomId)) {
-            roomSubscriptionCount.put(roomId, new AtomicInteger(INIT_ROOM_PEOPLE));
+        AtomicInteger count = roomSubscriptionCount.computeIfAbsent(roomId, key -> {
             roomPeopleCacheTemplate.opsForValue().set(ROOM_ID_PREFIX + roomId, INIT_ROOM_PEOPLE);
-            alreadyInGameUserCacheTemplate.opsForValue().set(USER_ID_PREFIX + userId, roomId);
 
-            return 1;
-        }
+            return new AtomicInteger(INIT_ROOM_PEOPLE);
+        });
 
-        return roomSubscriptionCount.get(roomId).updateAndGet(c -> {
+        int updateCount =  count.updateAndGet(c -> {
             if (c >= maxUser) {
                 throw new RoomErrorException(RoomErrorCode.MAX_ROOM);
             }
 
-            if (c == 0) {
-                return c;
-            }
-
-            roomPeopleCacheTemplate.opsForValue().increment(ROOM_ID_PREFIX + roomId);
-            alreadyInGameUserCacheTemplate.opsForValue().set(USER_ID_PREFIX + userId, roomId);
-
             return c + 1;
         });
+
+        roomPeopleCacheTemplate.opsForValue().increment(ROOM_ID_PREFIX + roomId);
+        alreadyInGameUserCacheTemplate.opsForValue().set(USER_ID_PREFIX + userId, roomId);
+
+        return updateCount;
     }
 
     private boolean validateRoom(Long roomId) {
