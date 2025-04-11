@@ -6,6 +6,7 @@ import com.example.quiz.game.exception.GameErrorException;
 import com.example.quiz.game.model.InGameUser;
 import com.example.quiz.game.repository.GameRepository;
 import com.example.quiz.global.config.RoomLockManager;
+import com.example.quiz.global.config.cacheConfig.redis.RedisConfig;
 import com.example.quiz.global.config.cacheConfig.redis.RedisEventPublisher;
 import com.example.quiz.global.exception.general.GeneralErrorCode;
 import com.example.quiz.global.exception.general.GeneralErrorException;
