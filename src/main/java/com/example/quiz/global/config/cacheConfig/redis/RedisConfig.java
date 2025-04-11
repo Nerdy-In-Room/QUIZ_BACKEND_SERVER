@@ -1,6 +1,6 @@
 package com.example.quiz.global.config.cacheConfig.redis;
 
-import com.example.quiz.room.model.ChangeCurrentPeople;
+import com.example.quiz.room.dto.response.ChangeCurrentPeopleResponse;
 import com.example.quiz.room.dto.response.RoomResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.redisson.Redisson;
@@ -67,8 +67,8 @@ public class RedisConfig {
     }
 
     @Bean
-    public RedisTemplate<String, ChangeCurrentPeople> changeCurrentPeoplePublishTemplate (RedisConnectionFactory redisConnectionFactory) {
-        RedisTemplate<String, ChangeCurrentPeople> template = new RedisTemplate<>();
+    public RedisTemplate<String, ChangeCurrentPeopleResponse> changeCurrentPeoplePublishTemplate (RedisConnectionFactory redisConnectionFactory) {
+        RedisTemplate<String, ChangeCurrentPeopleResponse> template = new RedisTemplate<>();
         template.setConnectionFactory(redisConnectionFactory);
         template.setKeySerializer(new StringRedisSerializer());
         template.setValueSerializer(new GenericJackson2JsonRedisSerializer());

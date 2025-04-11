@@ -20,9 +20,9 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.redisson.api.RedissonClient;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
@@ -55,8 +55,6 @@ public class RoomServiceUnitTest {
     private RoomLockManager roomLockManager;
 
     @Mock
-    private RedissonClient redissonClient;
-    @Mock
     private RedisEventPublisher redisEventPublisher;
     @Mock
     private RedisTemplate<String, Integer> roomPeopleCacheTemplate;
@@ -71,9 +69,60 @@ public class RoomServiceUnitTest {
         roomSubscriptionCount = new ConcurrentHashMap<>();
         roomService = new RoomService(
                 userRepository, roomRepository, gameRepository, simpMessagingTemplate, roomLockManager,
-                redissonClient, redisEventPublisher, roomSubscriptionCount,
+                redisEventPublisher, roomSubscriptionCount,
                 roomPeopleCacheTemplate, alreadyInGameUserCacheTemplate
         );
+    }
+
+    @Test
+    @DisplayName("방장이 방을 만든 후 정상적으로 초기화된다.")
+    void initRoom() {
+        // given
+        long roomId = 1L;
+        long masterId = 1L;
+        int INIT_ROOM_PEOPLE = 0;
+        String masterEmail = "master@test.com";
+        String userName = masterEmail + "_1234";
+
+        Room room = new Room(roomId, 1L, "test room", 8, 8, false, "master@test.com");
+        User masterUser = new User(masterId, userName, masterEmail, Role.ADMIN);
+        LoginUserRequest loginUserRequest = new LoginUserRequest(masterId, masterEmail, Role.USER);
+
+        Set<InGameUser> inGameUsers = new HashSet<>();
+        InGameUser inGameUser = new InGameUser(1L, roomId, masterUser.getEmail(), Role.ADMIN, false);
+        inGameUsers.add(inGameUser);
+        Game game = new Game(String.valueOf(roomId), 1L, 1, false, inGameUsers);
+
+        ReentrantLock mockLock = new ReentrantLock();
+
+        given(userRepository.findById(roomId)).willReturn(Optional.of(masterUser));
+        given(roomRepository.findById(roomId)).willReturn(Optional.of(room));
+        given(gameRepository.findById(String.valueOf(roomId))).willReturn(Optional.of(game));
+        given(roomLockManager.getLock(roomId)).willReturn(mockLock);
+
+        ValueOperations<String, Integer> intValueOps = mock(ValueOperations.class);
+        ValueOperations<String, Long> longValueOps = mock(ValueOperations.class);
+
+        given(roomPeopleCacheTemplate.opsForValue()).willReturn(intValueOps);
+        given(alreadyInGameUserCacheTemplate.opsForValue()).willReturn(longValueOps);
+
+        // when
+        RoomEnterResponse response = roomService.enterRoom(roomId, loginUserRequest, "master");
+
+        // then
+        assertThat(response).isNotNull();
+        assertThat(response.roomId()).isEqualTo(roomId);
+        assertThat(roomSubscriptionCount.get(roomId).get()).isEqualTo(1);
+
+        ArgumentCaptor<InGameUser> captor = ArgumentCaptor.forClass(InGameUser.class);
+
+        verify(roomPeopleCacheTemplate.opsForValue()).set("roomId:" + roomId, INIT_ROOM_PEOPLE);
+        verify(alreadyInGameUserCacheTemplate.opsForValue()).set("userId:" + masterId, roomId);
+        verify(simpMessagingTemplate).convertAndSend(eq("/pub/room/" + roomId), captor.capture());
+
+        InGameUser actual = captor.getValue();
+        assertThat(actual.getId()).isEqualTo(masterId);
+        assertThat(actual.getUsername()).isEqualTo(masterUser.getEmail());
     }
 
     @Test
@@ -95,7 +144,7 @@ public class RoomServiceUnitTest {
         Game game = new Game(String.valueOf(roomId), 1L, 1, false, inGameUsers);
 
         ReentrantLock mockLock = new ReentrantLock();
-        roomSubscriptionCount.put(roomId, new AtomicInteger(1)); // 실제 HashMap 사용
+        roomSubscriptionCount.put(roomId, new AtomicInteger(1));
 
         given(userRepository.findById(userId)).willReturn(Optional.of(normalUser));
         given(roomRepository.findById(roomId)).willReturn(Optional.of(room));
@@ -114,11 +163,19 @@ public class RoomServiceUnitTest {
         // then
         assertThat(response).isNotNull();
         assertThat(response.roomId()).isEqualTo(roomId);
-        assertThat(roomSubscriptionCount.get(roomId).get()).isEqualTo(2); // 증가 확인
+        assertThat(roomSubscriptionCount.get(roomId).get()).isEqualTo(2);
+
+        ArgumentCaptor<InGameUser> captor = ArgumentCaptor.forClass(InGameUser.class);
 
         verify(roomPeopleCacheTemplate.opsForValue()).increment("roomId:" + roomId);
         verify(alreadyInGameUserCacheTemplate.opsForValue()).set("userId:" + userId, roomId);
         verify(gameRepository).save(any(Game.class));
+
+        verify(simpMessagingTemplate).convertAndSend(eq("/pub/room/" + roomId), captor.capture());
+
+        InGameUser actual = captor.getValue();
+        assertThat(actual.getId()).isEqualTo(userId);
+        assertThat(actual.getUsername()).isEqualTo(normalUser.getEmail());
     }
 
     @Test
@@ -202,6 +259,19 @@ public class RoomServiceUnitTest {
         assertThat(response.inGameUser().getId()).isEqualTo(userId);
         assertThat(response.participants().size()).isEqualTo(2);
     }
+
+    @Test
+    @DisplayName("로그인 하지 않은 유저가 방에 입장할려고 하면 예외를 던진다.")
+    void enterRoomNoLoginUser() {
+        // given
+        long roomId = 1L;
+
+        // when
+        // then
+        assertThatThrownBy(() -> roomService.enterRoom(roomId, null, ""))
+                .isInstanceOf(GeneralErrorException.class)
+                .hasMessage("로그인 해주세요.");
+     }
 
     @Test
     @DisplayName("방 수정을 할 수 있다.")
