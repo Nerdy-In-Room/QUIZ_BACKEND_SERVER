@@ -31,6 +31,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Stream;
 
 @Slf4j
 @Service
@@ -76,6 +77,8 @@ public class GameService {
         inGameUser.changeReadyStatus(!inGameUser.isReadyStatus());
         game.getGameUser().add(inGameUser);
         gameRepository.save(game);
+
+
     }
 
     // User

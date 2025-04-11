@@ -8,6 +8,7 @@ import com.example.quiz.game.exception.GameErrorException;
 import com.example.quiz.game.model.InGameUser;
 import com.example.quiz.game.repository.GameRepository;
 import com.example.quiz.game.validation.GameValidation;
+import com.example.quiz.global.config.cacheConfig.redis.RedisConfig;
 import com.example.quiz.global.exception.general.GeneralErrorCode;
 import com.example.quiz.global.exception.general.GeneralErrorException;
 import com.example.quiz.global.type.Role;
@@ -36,9 +37,9 @@ import java.util.concurrent.ConcurrentHashMap;
 @Service
 @RequiredArgsConstructor
 public class QuizService {
-    private static final Map<Long, List<Long>> roomQuizMap = new ConcurrentHashMap<>();
-    private static final Map<Long, Map<Long, Long>> currentInGameScore = new ConcurrentHashMap<>();
-    private static final Map<Long, Integer> remainQuizMap = new ConcurrentHashMap<>();
+    private final Map<Long, List<Long>> roomQuizMap;
+    private final Map<Long, Map<Long, Long>> currentInGameScore;
+    private final Map<Long, Integer> remainQuizMap;
 
     private final UserRepository userRepository;
     private final RoomRepository roomRepository;
@@ -51,7 +52,7 @@ public class QuizService {
         User user = findUser(loginUserRequest);
         Room room = findRoomById(roomId);
         InGameUser inGameUser = findInGameUser(roomId, loginUserRequest);
-        if(remainQuizMap.isEmpty()) {
+        if (remainQuizMap.isEmpty()) {
             remainQuizMap.put(Long.parseLong(String.valueOf(room.getRoomId())), room.getQuizCount());
         }
 
@@ -65,7 +66,7 @@ public class QuizService {
 
         remainQuizMap.merge(Long.parseLong(roomId), 1, (oldValue, newValue) -> oldValue - 1);
         initializeGameOnQuizEnd(Long.parseLong(roomId));
-
+        log.info("remainQuiz : {}", remainQuizMap.get(Long.parseLong(roomId)));
         messagingTemplate.convertAndSend("/pub/quiz/" + roomId, new ResponseQuiz(quiz.getProblem(), quiz.getCorrectAnswer(), quiz.getDescription()));
     }
 
@@ -196,20 +197,4 @@ public class QuizService {
 
         return new InGameUser(loginUserRequest.userId(), roomId, user.getEmail(), Role.USER, false);
     }
-    // 테스트 코드에 활용
-    void setRemainQuizCount(Long roomId, Integer count) {
-        remainQuizMap.put(roomId, count);
-    }
-
-    Integer getRemainQuizCount(Long roomId) {
-        return remainQuizMap.get(roomId);
-    }
-
-    void setRoomQuizCount(Long roomId, List<Long> list) {
-        roomQuizMap.putIfAbsent(roomId, list);
-    }
-
-//    Integer getRoomQuizCount(Long roomId) {
-//        return roomQuizMap.get(roomId);
-//    }
 }
