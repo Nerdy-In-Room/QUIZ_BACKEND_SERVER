@@ -27,9 +27,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CyclicBarrier;
-import java.util.concurrent.ExecutionException;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -130,7 +128,6 @@ class RoomServiceIntegrationTest {
         assertEquals(roomId, captured.getRoomId());
         assertEquals(2, roomEnterResponse.participants().size());
         assertEquals(roomId, roomEnterResponse.inGameUser().getRoomId());
-        ;
     }
 
     @Test
@@ -167,6 +164,8 @@ class RoomServiceIntegrationTest {
 
         List<CompletableFuture<Void>> tasks = new ArrayList<>();
         CyclicBarrier cyclicBarrier = new CyclicBarrier(TEST_THREAD);
+        ExecutorService es = Executors.newFixedThreadPool(TEST_THREAD);
+        AtomicInteger failureCount = new AtomicInteger();
 
         // when
         for (User user : userList) {
@@ -178,9 +177,11 @@ class RoomServiceIntegrationTest {
                     cyclicBarrier.await();
                     roomService.enterRoom(targetRoomId, new LoginUserRequest(id, "email", Role.USER), "");
                 } catch (Exception e) {
-
+                    if (e.getMessage().equals("정원이 초과되었습니다.")) {
+                        failureCount.incrementAndGet();
+                    }
                 }
-            }));
+            }, es));
         }
 
         CompletableFuture.allOf(tasks.toArray(new CompletableFuture[0])).get();
@@ -188,6 +189,9 @@ class RoomServiceIntegrationTest {
         //then
         assertEquals(8, roomSubscriptionCount.get(roomId1).get());
         assertEquals(8, roomSubscriptionCount.get(roomId2).get());
+        assertEquals(86, failureCount.get());
+
+        es.shutdown();
     }
 
     @Test

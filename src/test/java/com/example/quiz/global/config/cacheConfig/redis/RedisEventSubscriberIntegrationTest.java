@@ -3,6 +3,7 @@ package com.example.quiz.global.config.cacheConfig.redis;
 import com.example.quiz.room.dto.response.ChangeCurrentPeopleResponse;
 import com.example.quiz.room.dto.response.RoomResponse;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -16,8 +17,7 @@ import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.timeout;
-import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.*;
 
 @SpringBootTest
 @ActiveProfiles("test")
@@ -30,6 +30,11 @@ public class RedisEventSubscriberIntegrationTest {
 
     @Autowired
     private ObjectMapper objectMapper;
+
+    @AfterEach
+    void tearDown() {
+        reset(messagingTemplate);
+    }
 
     @Test
     @DisplayName("새로운 방이 생겼을 때 이벤트를 수신하고 브로드캐스트한다.")
@@ -57,10 +62,10 @@ public class RedisEventSubscriberIntegrationTest {
     @DisplayName("현재 인원 변경 메시지를 수신하고 브로드캐스트한다")
     void receiveChangeCurrentPeopleAndBroadcast() {
         // given
-        ChangeCurrentPeopleResponse event1 = new ChangeCurrentPeopleResponse(1L, 4, System.currentTimeMillis());
+        ChangeCurrentPeopleResponse event = new ChangeCurrentPeopleResponse(1L, 4, System.currentTimeMillis());
 
         // when
-        redisEventPublisher.publishChangeCurrentPeople("change-roomList-channel", event1);
+        redisEventPublisher.publishChangeCurrentPeople("change-roomList-channel", event);
 
         // then
         ArgumentCaptor<Object> captor = ArgumentCaptor.forClass(Object.class);
@@ -73,7 +78,7 @@ public class RedisEventSubscriberIntegrationTest {
 
         List<?> list = (List<?>) value;
         assertThat(list).hasSize(1);
-        assertThat(list.get(0)).usingRecursiveComparison().isEqualTo(event1);
+        assertThat(list.get(0)).usingRecursiveComparison().isEqualTo(event);
     }
 
     @Test
@@ -103,7 +108,6 @@ public class RedisEventSubscriberIntegrationTest {
         assertThat(queue.get(0)).usingRecursiveComparison().isEqualTo(event2);
         assertThat(queue.get(1)).usingRecursiveComparison().isEqualTo(event3);
     }
-
     @Test
     @DisplayName("1초 이내 10개를 초과한 메시지가 올 경우 10개씩 나눠서 브로드캐스팅한다.")
     void receiveChangeCurrentPeopleTwoTimeBroadcast() {

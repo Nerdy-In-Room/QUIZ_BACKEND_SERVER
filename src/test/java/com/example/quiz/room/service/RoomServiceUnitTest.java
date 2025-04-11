@@ -80,7 +80,7 @@ public class RoomServiceUnitTest {
         // given
         long roomId = 1L;
         long masterId = 1L;
-        int INIT_ROOM_PEOPLE = 1;
+        int INIT_ROOM_PEOPLE = 0;
         String masterEmail = "master@test.com";
         String userName = masterEmail + "_1234";
 
