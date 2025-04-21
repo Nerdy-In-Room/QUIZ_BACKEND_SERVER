@@ -42,6 +42,21 @@
    - roomDB에 remove Status 1로 갱신
 5. 모든 게임 종료 후 앞서 삭제됐던 정보 롤백
 ---
+## quiz(인게임) , 문제 출제/확인 아키텍처
+![image](https://github.com/user-attachments/assets/d8aaefe0-43de-454b-bcab-69489bae84d9)
+## flow
+1. quiz 진입시 서버로 구독 요청
+   - 'quiz/' 경로로 WebSocket pub/sub 요청
+2. quiz 에서 문제 출제 또는 확인 인게임에서 퇴장
+   - Admin 문제 출제 버튼 클릭시 중복되지 않는 새로운 문제 갱신
+   - User 문제 확인 버튼 클릭시 정답이면 라운드 종료, 오답이면 토스트 메시지 출력
+   - 방 퇴장시 바로 room(대기방) 이 아닌 room list 이동
+3. 모든 라운드 종료시 room(대기방) 으로 리다이렉트
+4. room(대기방) 으로 리다이렉트 시 사용자 정보들 갱신
+   - removeStatus 0 으로 정상화
+   - 다중 사용자 정보 정상화
+   - room list 정상화
+---
 ## 배포
  - Rolling 방식의 배포 자동화를 구축했습니다.
  - dev 브랜치에 머지가 발생할 경우 배포를 진행합니다.
