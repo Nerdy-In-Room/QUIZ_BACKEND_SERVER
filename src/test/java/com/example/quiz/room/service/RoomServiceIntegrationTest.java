@@ -86,7 +86,7 @@ class RoomServiceIntegrationTest {
         LoginUserRequest loginUserRequest = new LoginUserRequest(master.getId(), master.getEmail(), Role.ADMIN);
 
         // when
-        RoomEnterResponse roomEnterResponse = roomService.enterRoom(roomId, loginUserRequest, "master");
+        RoomEnterResponse roomEnterResponse = roomService.enterRoom(roomId, loginUserRequest);
 
         // then
         ArgumentCaptor<InGameUser> captor = ArgumentCaptor.forClass(InGameUser.class);
@@ -112,7 +112,7 @@ class RoomServiceIntegrationTest {
         LoginUserRequest loginUserRequest = new LoginUserRequest(user.getId(), user.getEmail(), Role.USER);
 
         // when
-        RoomEnterResponse roomEnterResponse = roomService.enterRoom(roomId, loginUserRequest, "");
+        RoomEnterResponse roomEnterResponse = roomService.enterRoom(roomId, loginUserRequest);
 
         // then
         ArgumentCaptor<String> destinationCaptor = ArgumentCaptor.forClass(String.class);
@@ -139,7 +139,7 @@ class RoomServiceIntegrationTest {
         roomSubscriptionCount.put(roomId, new AtomicInteger(8));
         LoginUserRequest loginUserRequest = new LoginUserRequest(user.getId(), user.getEmail(), Role.USER);
 
-        assertThatThrownBy(() -> roomService.enterRoom(roomId, loginUserRequest, ""))
+        assertThatThrownBy(() -> roomService.enterRoom(roomId, loginUserRequest))
                 .isInstanceOf(RoomErrorException.class)
                 .hasMessage("정원이 초과되었습니다.");
     }
@@ -175,7 +175,7 @@ class RoomServiceIntegrationTest {
             tasks.add(CompletableFuture.runAsync(() -> {
                 try {
                     cyclicBarrier.await();
-                    roomService.enterRoom(targetRoomId, new LoginUserRequest(id, "email", Role.USER), "");
+                    roomService.enterRoom(targetRoomId, new LoginUserRequest(id, "email", Role.USER));
                 } catch (Exception e) {
                     if (e.getMessage().equals("정원이 초과되었습니다.")) {
                         failureCount.incrementAndGet();
