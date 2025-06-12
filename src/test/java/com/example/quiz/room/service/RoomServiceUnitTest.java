@@ -3,7 +3,6 @@ package com.example.quiz.room.service;
 import com.example.quiz.game.entity.Game;
 import com.example.quiz.game.model.InGameUser;
 import com.example.quiz.game.repository.GameRepository;
-import com.example.quiz.global.config.RoomLockManager;
 import com.example.quiz.global.config.cacheConfig.redis.RedisEventPublisher;
 import com.example.quiz.global.exception.general.GeneralErrorException;
 import com.example.quiz.global.type.Role;
@@ -33,7 +32,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.locks.ReentrantLock;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -51,8 +49,6 @@ public class RoomServiceUnitTest {
     private GameRepository gameRepository;
     @Mock
     private SimpMessagingTemplate simpMessagingTemplate;
-    @Mock
-    private RoomLockManager roomLockManager;
 
     @Mock
     private RedisEventPublisher redisEventPublisher;
@@ -68,7 +64,7 @@ public class RoomServiceUnitTest {
     void setUp() {
         roomSubscriptionCount = new ConcurrentHashMap<>();
         roomService = new RoomService(
-                userRepository, roomRepository, gameRepository, simpMessagingTemplate, roomLockManager,
+                userRepository, roomRepository, gameRepository, simpMessagingTemplate,
                 redisEventPublisher, roomSubscriptionCount,
                 roomPeopleCacheTemplate, alreadyInGameUserCacheTemplate
         );
@@ -93,12 +89,9 @@ public class RoomServiceUnitTest {
         inGameUsers.add(inGameUser);
         Game game = new Game(String.valueOf(roomId), 1L, 1, false, inGameUsers);
 
-        ReentrantLock mockLock = new ReentrantLock();
-
         given(userRepository.findById(roomId)).willReturn(Optional.of(masterUser));
         given(roomRepository.findById(roomId)).willReturn(Optional.of(room));
         given(gameRepository.findById(String.valueOf(roomId))).willReturn(Optional.of(game));
-        given(roomLockManager.getLock(roomId)).willReturn(mockLock);
 
         ValueOperations<String, Integer> intValueOps = mock(ValueOperations.class);
         ValueOperations<String, Long> longValueOps = mock(ValueOperations.class);
@@ -107,7 +100,7 @@ public class RoomServiceUnitTest {
         given(alreadyInGameUserCacheTemplate.opsForValue()).willReturn(longValueOps);
 
         // when
-        RoomEnterResponse response = roomService.enterRoom(roomId, loginUserRequest, "master");
+        RoomEnterResponse response = roomService.enterRoom(roomId, loginUserRequest);
 
         // then
         assertThat(response).isNotNull();
@@ -143,13 +136,11 @@ public class RoomServiceUnitTest {
         inGameUsers.add(new InGameUser(1L, roomId, masterUser.getEmail(), Role.ADMIN, false));
         Game game = new Game(String.valueOf(roomId), 1L, 1, false, inGameUsers);
 
-        ReentrantLock mockLock = new ReentrantLock();
         roomSubscriptionCount.put(roomId, new AtomicInteger(1));
 
         given(userRepository.findById(userId)).willReturn(Optional.of(normalUser));
         given(roomRepository.findById(roomId)).willReturn(Optional.of(room));
         given(gameRepository.findById(String.valueOf(roomId))).willReturn(Optional.of(game));
-        given(roomLockManager.getLock(roomId)).willReturn(mockLock);
 
         ValueOperations<String, Integer> intValueOps = mock(ValueOperations.class);
         ValueOperations<String, Long> longValueOps = mock(ValueOperations.class);
@@ -158,7 +149,7 @@ public class RoomServiceUnitTest {
         given(alreadyInGameUserCacheTemplate.opsForValue()).willReturn(longValueOps);
 
         // when
-        RoomEnterResponse response = roomService.enterRoom(roomId, loginUserRequest, "");
+        RoomEnterResponse response = roomService.enterRoom(roomId, loginUserRequest);
 
         // then
         assertThat(response).isNotNull();
@@ -199,20 +190,18 @@ public class RoomServiceUnitTest {
 
         Game game = new Game(String.valueOf(roomId), 1L, 1, false, inGameUsers);
 
-        ReentrantLock mockLock = new ReentrantLock();
         roomSubscriptionCount.put(roomId, new AtomicInteger(game.getGameUser().size()));
 
         given(userRepository.findById(userId)).willReturn(Optional.of(user));
         given(roomRepository.findById(roomId)).willReturn(Optional.of(room));
         given(gameRepository.findById(String.valueOf(roomId))).willReturn(Optional.of(game));
-        given(roomLockManager.getLock(roomId)).willReturn(mockLock);
 
         ValueOperations<String, Long> longValueOps = mock(ValueOperations.class);
         given(alreadyInGameUserCacheTemplate.opsForValue()).willReturn(longValueOps);
 
         // when
         // then
-        assertThatThrownBy(() -> roomService.enterRoom(roomId, loginUserRequest, ""))
+        assertThatThrownBy(() -> roomService.enterRoom(roomId, loginUserRequest))
                 .isInstanceOf(RoomErrorException.class)
                 .hasMessageContaining("정원이 초과되었습니다.");
     }
@@ -238,20 +227,18 @@ public class RoomServiceUnitTest {
 
         Game game = new Game(String.valueOf(roomId), 1L, 2, false, inGameUsers);
 
-        ReentrantLock mockLock = new ReentrantLock();
         roomSubscriptionCount.put(roomId, new AtomicInteger(2));
 
         given(userRepository.findById(userId)).willReturn(Optional.of(user));
         given(roomRepository.findById(roomId)).willReturn(Optional.of(room));
         given(gameRepository.findById(String.valueOf(roomId))).willReturn(Optional.of(game));
-        given(roomLockManager.getLock(roomId)).willReturn(mockLock);
 
         ValueOperations<String, Long> longValueOps = mock(ValueOperations.class);
         given(alreadyInGameUserCacheTemplate.opsForValue()).willReturn(longValueOps);
         given(alreadyInGameUserCacheTemplate.opsForValue().get("userId:" + userId)).willReturn(roomId);
 
         // when
-        RoomEnterResponse response = roomService.enterRoom(roomId, loginUserRequest, "");
+        RoomEnterResponse response = roomService.enterRoom(roomId, loginUserRequest);
 
         // then
         assertThat(response).isNotNull();
@@ -268,7 +255,7 @@ public class RoomServiceUnitTest {
 
         // when
         // then
-        assertThatThrownBy(() -> roomService.enterRoom(roomId, null, ""))
+        assertThatThrownBy(() -> roomService.enterRoom(roomId, null))
                 .isInstanceOf(GeneralErrorException.class)
                 .hasMessage("로그인 해주세요.");
      }
