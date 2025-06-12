@@ -5,8 +5,6 @@ import com.example.quiz.game.exception.GameErrorCode;
 import com.example.quiz.game.exception.GameErrorException;
 import com.example.quiz.game.model.InGameUser;
 import com.example.quiz.game.repository.GameRepository;
-import com.example.quiz.global.config.RoomLockManager;
-import com.example.quiz.global.config.cacheConfig.redis.RedisConfig;
 import com.example.quiz.global.config.cacheConfig.redis.RedisEventPublisher;
 import com.example.quiz.global.exception.general.GeneralErrorCode;
 import com.example.quiz.global.exception.general.GeneralErrorException;
@@ -33,9 +31,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.locks.ReentrantLock;
 
 @Slf4j
 @Service
@@ -45,7 +41,6 @@ public class RoomService {
     private final RoomRepository roomRepository;
     private final GameRepository gameRepository;
     private final SimpMessagingTemplate simpMessagingTemplate;
-    private final RoomLockManager roomLockManager;
 
     private final int INIT_ROOM_PEOPLE = 0;
     private final String ROOM_ID_PREFIX = "roomId:";
@@ -58,47 +53,35 @@ public class RoomService {
     private final RedisTemplate<String, Integer> roomPeopleCacheTemplate;
     private final RedisTemplate<String, Long> alreadyInGameUserCacheTemplate;
 
-    public RoomEnterResponse enterRoom(long roomId, LoginUserRequest loginUserRequest, String status) {
+    public RoomEnterResponse enterRoom(long roomId, LoginUserRequest loginUserRequest) {
         validateLoginUser(loginUserRequest);
         checkAlreadyInGameUserDifferentRoom(loginUserRequest.userId(), roomId);
 
-        ReentrantLock lock = roomLockManager.getLock(roomId);
+        Room room = findRoomById(roomId);
+        Game game = findGameByRoomId(roomId);
+        InGameUser inGameUser = findInGameUser(roomId, loginUserRequest);
 
-        try {
-            if (lock.tryLock(3, TimeUnit.SECONDS)) {
-                Room room = findRoomById(roomId);
-                Game game = findGameByRoomId(roomId);
-                InGameUser inGameUser = findInGameUser(roomId, loginUserRequest);
-
-                if (validateRoom(roomId)) {
-                    return RoomMapper.INSTANCE.RoomToRoomEnterResponse(room, inGameUser, game.getGameUser());
-                }
-
-                if (isUserAlreadyInGameSameRoom(roomId, loginUserRequest.userId())) {
-                    return RoomMapper.INSTANCE.RoomToRoomEnterResponse(room, inGameUser, game.getGameUser());
-                }
-
-                int currentCount = incrementSubscriptionCount(roomId, loginUserRequest.userId(), room.getMaxPeople());
-
-                if (room.getMasterEmail().equals(loginUserRequest.email())) {
-                    publishRoomCreatedEvent(RoomMapper.INSTANCE.RoomToRoomResponse(room));
-                    simpMessagingTemplate.convertAndSend("/pub/room/" + roomId, inGameUser);
-
-                    return RoomMapper.INSTANCE.RoomToRoomEnterResponse(room, inGameUser, game.getGameUser());
-                }
-
-                addUserToGame(game, inGameUser, roomId, currentCount);
-                simpMessagingTemplate.convertAndSend("/pub/room/" + roomId, inGameUser);
-
-                return RoomMapper.INSTANCE.RoomToRoomEnterResponse(room, inGameUser, game.getGameUser());
-            }
-        } catch (InterruptedException e) {
-            log.error("방 입장 lock 중 인터럽트 발생: {}", e.getMessage());
-        } finally {
-            lock.unlock();
+        if (validateRoom(roomId)) {
+            return RoomMapper.INSTANCE.RoomToRoomEnterResponse(room, inGameUser, game.getGameUser());
         }
 
-        throw new RoomErrorException(RoomErrorCode.FAIL_ENTER_ROOM, roomId + " 방 입장에 실패했습니다.");
+        if (isUserAlreadyInGameSameRoom(roomId, loginUserRequest.userId())) {
+            return RoomMapper.INSTANCE.RoomToRoomEnterResponse(room, inGameUser, game.getGameUser());
+        }
+
+        int currentCount = incrementSubscriptionCount(roomId, loginUserRequest.userId(), room.getMaxPeople());
+
+        if (room.getMasterEmail().equals(loginUserRequest.email())) {
+            publishRoomCreatedEvent(RoomMapper.INSTANCE.RoomToRoomResponse(room));
+            simpMessagingTemplate.convertAndSend("/pub/room/" + roomId, inGameUser);
+
+            return RoomMapper.INSTANCE.RoomToRoomEnterResponse(room, inGameUser, game.getGameUser());
+        }
+
+        addUserToGame(game, inGameUser, roomId, currentCount);
+        simpMessagingTemplate.convertAndSend("/pub/room/" + roomId, inGameUser);
+
+        return RoomMapper.INSTANCE.RoomToRoomEnterResponse(room, inGameUser, game.getGameUser());
     }
 
     @Transactional
@@ -157,7 +140,7 @@ public class RoomService {
             return new AtomicInteger(INIT_ROOM_PEOPLE);
         });
 
-        int updateCount =  count.updateAndGet(c -> {
+        int updateCount = count.updateAndGet(c -> {
             if (c >= maxUser) {
                 throw new RoomErrorException(RoomErrorCode.MAX_ROOM);
             }

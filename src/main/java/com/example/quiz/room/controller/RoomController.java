@@ -3,7 +3,10 @@ package com.example.quiz.room.controller;
 import com.example.quiz.global.config.auth.annotation.user.LoginUser;
 import com.example.quiz.room.dto.request.RoomCreateRequest;
 import com.example.quiz.room.dto.request.RoomModifyRequest;
-import com.example.quiz.room.dto.response.*;
+import com.example.quiz.room.dto.response.RoomEnterResponse;
+import com.example.quiz.room.dto.response.RoomListResponse;
+import com.example.quiz.room.dto.response.RoomModifyResponse;
+import com.example.quiz.room.dto.response.RoomResponse;
 import com.example.quiz.room.service.RoomProducerService;
 import com.example.quiz.room.service.RoomService;
 import com.example.quiz.user.dto.request.LoginUserRequest;
@@ -51,9 +54,8 @@ public class RoomController {
 
     @GetMapping("/room/{roomId}")
     public ModelAndView enterRoom(@PathVariable Long roomId,
-                                  @LoginUser LoginUserRequest loginUserRequest,
-                                  @RequestParam(required = false) String status) {
-        RoomEnterResponse roomEnterResponse = roomService.enterRoom(roomId, loginUserRequest, status);
+                                  @LoginUser LoginUserRequest loginUserRequest) {
+        RoomEnterResponse roomEnterResponse = roomService.enterRoom(roomId, loginUserRequest);
 
         if (roomEnterResponse.participants().isEmpty()) {
             return new ModelAndView("redirect:/room-list");

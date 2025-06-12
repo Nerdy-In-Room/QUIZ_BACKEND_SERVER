@@ -118,17 +118,16 @@ class RoomControllerTest {
     void enterRoom() throws Exception {
         // given
         Long roomId = 1L;
-        String status = "";
         InGameUser inGameUser = new InGameUser(1L, 1L, "tset", Role.USER, false);
         Set<InGameUser> set = new HashSet<>();
         set.add(inGameUser);
         RoomEnterResponse mockResponse = new RoomEnterResponse(roomId, "test room", 1L, 8, 5, false, Role.USER, inGameUser, set);
 
-        given(roomService.enterRoom(eq(roomId), any(), eq(status))).willReturn(mockResponse);
+        given(roomService.enterRoom(eq(roomId), any())).willReturn(mockResponse);
 
-        // when & then
-        mockMvc.perform(get("/room/{roomId}", roomId)
-                        .param("status", status))
+        // when
+        // then
+        mockMvc.perform(get("/room/{roomId}", roomId))
                 .andExpect(status().isOk())
                 .andExpect(view().name("room"))
                 .andExpect(model().attributeExists("roomInfo"));
@@ -139,17 +138,15 @@ class RoomControllerTest {
     void enterRoomNoPeople() throws Exception {
         // given
         Long roomId = 1L;
-        String status = "";
         InGameUser inGameUser = new InGameUser(1L, 1L, "tset", Role.USER, false);
         Set<InGameUser> set = new HashSet<>();
         RoomEnterResponse mockResponse = new RoomEnterResponse(roomId, "test room", 1L, 8, 5, false, Role.USER, inGameUser, set);
 
-        given(roomService.enterRoom(eq(roomId), any(), eq(status))).willReturn(mockResponse);
+        given(roomService.enterRoom(eq(roomId), any())).willReturn(mockResponse);
 
         // when
         // then
-        mockMvc.perform(get("/room/{roomId}", roomId)
-                        .param("status", status))
+        mockMvc.perform(get("/room/{roomId}", roomId))
                 .andExpect(status().is3xxRedirection());
     }
 
